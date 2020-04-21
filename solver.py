@@ -1,6 +1,6 @@
 import networkx as nx
 from parse import read_input_file, write_output_file
-from utils import is_valid_network, average_pairwise_distance
+from utils import is_valid_network, average_pairwise_distance, average_pairwise_distance_fast
 from generator import generate_tree
 import sys
 import time
@@ -14,8 +14,21 @@ def solve(G):
     Returns:
         T: networkx.Graph
     """
+    MST = nx.minimum_spanning_tree(G)
+    best_score = average_pairwise_distance_fast(MST)
+    # if a node of T has degree 1, let's delete it and calculate the pairwise distance
+    BEST_MST = MST
+    leaves = [key[0] for key in MST.degree() if key[1] == 1].sort(reverse=True)
+    if leaves:
+        for leaf in leaves:
+            BEST_MST.remove_node(leaf)
+            potential_score = average_pairwise_distance_fast(BEST_MST)
+            if potential_score > best_score:
+                BEST_MST = MST  # change it back
+            else:
+                MST = BEST_MST  # change our MST
 
-    return generate_tree(10)
+    return BEST_MST
 
 
 def run_solver(full=True):

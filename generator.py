@@ -5,14 +5,15 @@ import matplotlib as plt
 import random
 import sys
 
-def generate_tree(n):
+
+def generate_tree(n=random.randint(10, 20)):
     """
     Args:
         n: int
     Returns:
         T: networkx.Graph [Tree of n vertices]
     """
-    T = nx.random_tree(n,1)
+    T = nx.random_tree(n)
     #plt.subplot(121)
     nx.draw(T)
     return T

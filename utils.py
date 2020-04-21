@@ -67,8 +67,8 @@ def average_pairwise_distance_fast(T):
     marked = defaultdict(bool)
     # store child parent relationships for each edge, because the components
     # created when removing an edge are the child subtree and the rest of the vertices
-    root = list(T.nodes)[0];
-    
+    root = list(T.nodes)[0]
+
     child_parent_pairs = [(root, root)]
 
     def calculate_subtree_sizes(u):
