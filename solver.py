@@ -1,6 +1,6 @@
 import networkx as nx
 from networkx.algorithms.approximation import steiner_tree
-from parse import read_input_file, write_output_file
+from parse import read_input_file, write_output_file, read_output_file
 from utils import is_valid_network, average_pairwise_distance, average_pairwise_distance_fast
 from generator import generate_tree
 import sys
@@ -14,13 +14,17 @@ def sublists_from_list(lst):
             sublists.append(sub)
 
     return sublists
-def solve(G):
+
+
+def solve(G, T):
     """
     Args:
         G: networkx.Graph
 
     Returns:
         T: networkx.Graph
+    """
+
     """
     MST = nx.minimum_spanning_tree(G)
     best_T = MST.copy()
@@ -62,7 +66,13 @@ def solve(G):
             if new_score <= best_score:
                 best_T = EMPTY_G
                 best_score = new_score
-
+    """
+    # load existing graph
+    existing_best_score = 0
+    if T and T.edges:
+        existing_best_score = average_pairwise_distance_fast(T)
+    best_T = T
+    best_score = existing_best_score
     # Random guessing/brute force time
     if len(G):
         # create sublists
@@ -77,14 +87,17 @@ def solve(G):
                 if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
                     new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
                     if new_score < best_score:
-                        print("new score identified, improvement of "+str((new_score - best_score)/best_score))
                         best_T = TEST_T
                         best_score = new_score
+    if best_score < existing_best_score:
+        print("yes ----- "+str(-100 * (best_score - existing_best_score)/existing_best_score))
 
+    else:
+        print("no, " + str(existing_best_score))
     return best_T
 
 
-def run_solver(full=True, file=""):
+def run_solver(full=False, file=""):
     """
     Runs the solve() function on all graphs in the inputs folder and saves outputs
     """
@@ -93,22 +106,24 @@ def run_solver(full=True, file=""):
     # find files
     sizes = ["small", "medium", "large"]
     num_graphs = [303, 303, 400]
-    # we can just do small graphs if the parameter full is set to False
-    if not full:
-        num_graphs = num_graphs[0:1]
-    num_graphs = [num_graphs[1]]
+    # we can just do a subset of graphs if the parameter full is set to False
+    sizes = ["medium"]
+    GRAPH_RANGE = range(200, 304)
     # loop through all inputs and create outputs
     if not file:
-        for i in range(len(num_graphs)):
-            for j in range(1, num_graphs[i] + 1):
-                filepath = sizes[i]+"-"+str(j)
+        for size in sizes:
+            for j in GRAPH_RANGE:
+                filepath = size+"-"+str(j)
                 G = read_input_file("inputs/"+filepath+".in")
-                T = solve(G)
+                print("analyzing "+filepath)
+                EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
+                T = solve(G, EXISTING_T)
                 write_output_file(T, "outputs/"+filepath+".out")
-    else:
+    else:  # file-specific running
         filepath = file
         G = read_input_file("inputs/"+filepath+".in")
-        T = solve(G)
+        EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
+        T = solve(G, EXISTING_T)
         write_output_file(T, "outputs/"+filepath+".out")
     end_time = time.perf_counter()
     print(f"Process complete. Total time {end_time - start_time:0.4f} seconds")
