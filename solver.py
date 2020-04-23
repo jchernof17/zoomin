@@ -1,11 +1,19 @@
 import networkx as nx
+from networkx.algorithms.approximation import steiner_tree
 from parse import read_input_file, write_output_file
 from utils import is_valid_network, average_pairwise_distance, average_pairwise_distance_fast
 from generator import generate_tree
 import sys
 import time
 
+def sublists_from_list(lst):
+    sublists = [[]]
+    for i in range(len(lst)+1):
+        for j in range(i+1, len(lst)+1):
+            sub = lst[i:j]
+            sublists.append(sub)
 
+    return sublists
 def solve(G):
     """
     Args:
@@ -36,6 +44,43 @@ def solve(G):
             best_T = new_T
             best_score = new_score
 
+    # Now try getting a 0
+    if any([pair[1] >= len(G)-1 for pair in G.degree()]):
+        # find that node and return just that
+        center_node = max(G.degree, key=lambda pair: pair[1])[0]
+        if len(G)-1 == G.degree(center_node) - ((center_node, center_node) in G.edges):
+            EMPTY_G = G.copy()
+            for e in EMPTY_G.edges:
+                EMPTY_G.remove_edge(*e)
+            for node in range(len(G)):
+                if node != center_node:
+                    EMPTY_G.remove_node(node)
+            if not EMPTY_G.edges:
+                new_score = 0
+            else:
+                new_score = average_pairwise_distance_fast(EMPTY_G)
+            if new_score <= best_score:
+                best_T = EMPTY_G
+                best_score = new_score
+
+    # Random guessing/brute force time
+    if len(G):
+        # create sublists
+        sublists = sublists_from_list(list(G.nodes))
+        for lst in sublists:
+            # remove sublist nodes from original graph
+            TEST_G = G.copy()
+            TEST_G.remove_nodes_from(lst)
+            # try the steiner tree method
+            if len(TEST_G) and nx.is_connected(TEST_G):
+                TEST_T = steiner_tree(TEST_G, TEST_G.nodes)
+                if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                    new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                    if new_score < best_score:
+                        print("new score identified, improvement of "+str((new_score - best_score)/best_score))
+                        best_T = TEST_T
+                        best_score = new_score
+
     return best_T
 
 
@@ -51,7 +96,7 @@ def run_solver(full=True, file=""):
     # we can just do small graphs if the parameter full is set to False
     if not full:
         num_graphs = num_graphs[0:1]
-
+    num_graphs = [num_graphs[1]]
     # loop through all inputs and create outputs
     if not file:
         for i in range(len(num_graphs)):
