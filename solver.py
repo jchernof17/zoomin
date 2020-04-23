@@ -9,7 +9,8 @@ import sys
 import time
 
 ### CONTROL SWITCHES ###
-
+file = ""
+START = 1
 RUN_LIST_SMALL = False
 RUN_LIST_MEDIUM = True
 RUN_LIST_LARGE = False
@@ -23,10 +24,13 @@ def sublists_from_graph(G):
     if len(lst) > 50:
         for node in lst:
             for _ in range(MAXIMUM_SUBLISTS // len(lst)):
-                MIS_G = maximal_independent_set(G, [node])
-                sub = list(MIS_G)
-                if sub not in sublists:
-                    sublists.append(sub)
+                try:
+                    MIS_G = maximal_independent_set(G, [node])
+                    sub = list(MIS_G)
+                    if sub not in sublists:
+                        sublists.append(sub)
+                except:
+                    pass
     else:
         for i in range(len(lst)+1):
             for j in range(i+1, len(lst)+1):
@@ -144,7 +148,7 @@ def run_solver(file=""):
     if not file:
         for i in range(len(sizes)):
             size = sizes[i]
-            GRAPH_RANGE = range(1, num_graphs[i])
+            GRAPH_RANGE = range(START, num_graphs[i])
             for j in GRAPH_RANGE:
                 filepath = size+"-"+str(j)
                 G = read_input_file("inputs/"+filepath+".in")
