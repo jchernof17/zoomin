@@ -1,17 +1,37 @@
 import networkx as nx
 from networkx.algorithms.approximation import steiner_tree
+from networkx.algorithms.shortest_paths.weighted import single_source_dijkstra_path
+from networkx.algorithms.mis import maximal_independent_set
 from parse import read_input_file, write_output_file, read_output_file
 from utils import is_valid_network, average_pairwise_distance, average_pairwise_distance_fast
 from generator import generate_tree
 import sys
 import time
 
-def sublists_from_list(lst):
-    sublists = [[]]
-    for i in range(len(lst)+1):
-        for j in range(i+1, len(lst)+1):
-            sub = lst[i:j]
-            sublists.append(sub)
+### CONTROL SWITCHES ###
+
+RUN_LIST_SMALL = False
+RUN_LIST_MEDIUM = True
+RUN_LIST_LARGE = False
+
+MAXIMUM_SUBLISTS = 1000
+
+
+def sublists_from_graph(G):
+    lst = list(G.nodes)
+    sublists = []
+    if len(lst) > 50:
+        for node in lst:
+            for _ in range(MAXIMUM_SUBLISTS // len(lst)):
+                MIS_G = maximal_independent_set(G, [node])
+                sub = list(MIS_G)
+                if sub not in sublists:
+                    sublists.append(sub)
+    else:
+        for i in range(len(lst)+1):
+            for j in range(i+1, len(lst)+1):
+                sub = lst[i:j]
+                sublists.append(sub)
 
     return sublists
 
@@ -71,24 +91,28 @@ def solve(G, T):
     existing_best_score = 0
     if T and T.edges:
         existing_best_score = average_pairwise_distance_fast(T)
-    best_T = T
-    best_score = existing_best_score
+    else:
+        return T
+    best_T, best_score = T, existing_best_score
+
     # Random guessing/brute force time
     if len(G):
         # create sublists
-        sublists = sublists_from_list(list(G.nodes))
+        sublists = sublists_from_graph(G)
+        print("checking on " + str(len(sublists)) + " sublists")
         for lst in sublists:
             # remove sublist nodes from original graph
             TEST_G = G.copy()
-            TEST_G.remove_nodes_from(lst)
+            # nodes_to_remove = [node for node in G.nodes if node not in lst]
+            # TEST_G.remove_nodes_from(nodes_to_remove)
             # try the steiner tree method
-            if len(TEST_G) and nx.is_connected(TEST_G):
-                TEST_T = steiner_tree(TEST_G, TEST_G.nodes)
-                if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
-                    new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
-                    if new_score < best_score:
-                        best_T = TEST_T
-                        best_score = new_score
+            TEST_T = steiner_tree(TEST_G, lst)
+            if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                if new_score < best_score:
+                    best_T = TEST_T
+                    best_score = new_score
+
     if best_score < existing_best_score:
         print("yes ----- "+str(-100 * (best_score - existing_best_score)/existing_best_score))
 
@@ -97,21 +121,30 @@ def solve(G, T):
     return best_T
 
 
-def run_solver(full=False, file=""):
+def run_solver(file=""):
     """
     Runs the solve() function on all graphs in the inputs folder and saves outputs
     """
     # start timer
     start_time = time.perf_counter()
     # find files
-    sizes = ["small", "medium", "large"]
-    num_graphs = [303, 303, 400]
+    num_graphs = []
     # we can just do a subset of graphs if the parameter full is set to False
-    sizes = ["medium"]
-    GRAPH_RANGE = range(200, 304)
+    sizes = []
+    if RUN_LIST_SMALL:
+        sizes.append("small")
+        num_graphs.append(304)
+    if RUN_LIST_MEDIUM:
+        sizes.append("medium")
+        num_graphs.append(304)
+    if RUN_LIST_LARGE:
+        sizes.append("large")
+        num_graphs.append(401)
     # loop through all inputs and create outputs
     if not file:
-        for size in sizes:
+        for i in range(len(sizes)):
+            size = sizes[i]
+            GRAPH_RANGE = range(1, num_graphs[i])
             for j in GRAPH_RANGE:
                 filepath = size+"-"+str(j)
                 G = read_input_file("inputs/"+filepath+".in")
