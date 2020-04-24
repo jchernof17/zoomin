@@ -8,36 +8,42 @@ from generator import generate_tree
 import sys
 import time
 from random import sample, randint
+from math import log
 
 ### CONTROL SWITCHES ###
 
 # INPUT FILES
-file = "large-66"
+file = ""
 START = 1  # Set this to some number between 1 and 303
-RUN_LIST_SMALL = False
+RUN_LIST_SMALL = True
 RUN_LIST_MEDIUM = False
-RUN_LIST_LARGE = True
+RUN_LIST_LARGE = False
 
 # STRATEGIES
 BRUTE_FORCE = False
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 20000
+MAXIMUM_SUBLISTS = 10000
 BRUTE_EDGES = True
 
 # DEBUGGING
-TIME_EACH_OUTPUT = True
+TIME_EACH_OUTPUT = False
 SHOW_UPDATE_RESULT = True
 
 
 def subedgelists_from_graph(G):
     lst = list(G.edges)
-    double_the_min_number_of_edges = len(min_edge_dominating_set(G))
-    upper_bound = min([len(G.nodes) - 1,len(lst)])
-    print("analyzing len " + str(double_the_min_number_of_edges) + ":" + str(upper_bound))
+    # the maximum degree of any node in the graph G
+    max_degree = max([out[1] for out in nx.degree(G)])
+    # there is no way the number of edges is less than the power max_degree has to be raised to in order to reach the number of vertices!
+    degree_based_edge_minimum = round(log(len(G), max_degree))
+
+    # there is no way the number of edges is >= the number of vertices!
+    upper_bound = min([len(G) - 1,len(lst)])
+    # print("analyzing len " + str(double_the_min_number_of_edges) + ":" + str(upper_bound))
     sublists = []
     for _ in range(MAXIMUM_SUBLISTS):
-        sublist = sample(lst, k=randint(double_the_min_number_of_edges, upper_bound))
+        sublist = sample(lst, k=randint(degree_based_edge_minimum, upper_bound))
         if sublist not in sublists:
             sublists.append(sublist)
 
@@ -182,8 +188,8 @@ def solve(G, T):
         print("yes ----- "+str(round(-100 * (best_score - existing_best_score)/existing_best_score,2)) + "% ----- new score "+ str(round(best_score,4)))
 
     elif SHOW_UPDATE_RESULT:
-        print("no, " + str(existing_best_score))
-
+        # print("no, " + str(round(existing_best_score,2)))
+        pass
     method_end_time = time.perf_counter()
     time_seconds = method_end_time - method_start_time
     if TIME_EACH_OUTPUT:
