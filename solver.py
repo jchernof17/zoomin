@@ -1,5 +1,5 @@
 import networkx as nx
-from networkx.algorithms.approximation import steiner_tree
+from networkx.algorithms.approximation import steiner_tree, min_weighted_dominating_set, min_edge_dominating_set
 from networkx.algorithms.shortest_paths.weighted import single_source_dijkstra_path
 from networkx.algorithms.mis import maximal_independent_set
 from parse import read_input_file, write_output_file, read_output_file
@@ -7,15 +7,40 @@ from utils import is_valid_network, average_pairwise_distance, average_pairwise_
 from generator import generate_tree
 import sys
 import time
+from random import sample, randint
 
 ### CONTROL SWITCHES ###
-file = ""
-START = 1
-RUN_LIST_SMALL = False
-RUN_LIST_MEDIUM = True
-RUN_LIST_LARGE = False
 
-MAXIMUM_SUBLISTS = 1000
+# INPUT FILES
+file = "large-66"
+START = 1  # Set this to some number between 1 and 303
+RUN_LIST_SMALL = False
+RUN_LIST_MEDIUM = False
+RUN_LIST_LARGE = True
+
+# STRATEGIES
+BRUTE_FORCE = False
+MAX_SPANNING_TREE = False
+DOMINATING_SET = False
+MAXIMUM_SUBLISTS = 20000
+BRUTE_EDGES = True
+
+# DEBUGGING
+TIME_EACH_OUTPUT = True
+
+
+def subedgelists_from_graph(G):
+    lst = list(G.edges)
+    double_the_min_number_of_edges = len(min_edge_dominating_set(G))
+    upper_bound = min([len(G.nodes) - 1,len(lst)])
+    print("analyzing len " + str(double_the_min_number_of_edges) + ":" + str(upper_bound))
+    sublists = []
+    for _ in range(MAXIMUM_SUBLISTS):
+        sublist = sample(lst, k=randint(double_the_min_number_of_edges, upper_bound))
+        if sublist not in sublists:
+            sublists.append(sublist)
+
+    return sublists
 
 
 def sublists_from_graph(G):
@@ -26,6 +51,8 @@ def sublists_from_graph(G):
             for _ in range(MAXIMUM_SUBLISTS // len(lst)):
                 try:
                     MIS_G = maximal_independent_set(G, [node])
+                    while len(MIS_G) < min(3, len(lst) / 8):
+                        MIS_G = maximal_independent_set(G, [node])
                     sub = list(MIS_G)
                     if sub not in sublists:
                         sublists.append(sub)
@@ -48,6 +75,14 @@ def solve(G, T):
     Returns:
         T: networkx.Graph
     """
+    method_start_time = time.perf_counter()
+    # load existing graph
+    existing_best_score = 0
+    if T and T.edges:
+        existing_best_score = average_pairwise_distance_fast(T)
+    else:  # if we already calculated a score of 0, skip this analysis
+        return T
+    best_T, best_score = T, existing_best_score
 
     """
     MST = nx.minimum_spanning_tree(G)
@@ -91,16 +126,20 @@ def solve(G, T):
                 best_T = EMPTY_G
                 best_score = new_score
     """
-    # load existing graph
-    existing_best_score = 0
-    if T and T.edges:
-        existing_best_score = average_pairwise_distance_fast(T)
-    else:
-        return T
-    best_T, best_score = T, existing_best_score
+    # Edge-based brute force
+    if len(G) and BRUTE_EDGES:
+        subedgelists = subedgelists_from_graph(G)
+        for sublist in subedgelists:
+            TEST_T = G.edge_subgraph(sublist).copy()
+            # print(sublist)
+            if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                if new_score < best_score:
+                    best_T = TEST_T
+                    best_score = new_score
 
     # Random guessing/brute force time
-    if len(G):
+    if len(G) and BRUTE_FORCE:
         # create sublists
         sublists = sublists_from_graph(G)
         print("checking on " + str(len(sublists)) + " sublists")
@@ -117,15 +156,40 @@ def solve(G, T):
                     best_T = TEST_T
                     best_score = new_score
 
+    # max spanning tree
+    if len(G) and MAX_SPANNING_TREE:
+        MAXST = nx.maximum_spanning_tree(G)
+        if len(MAXST) and nx.is_tree(MAXST) and nx.is_dominating_set(G, MAXST.nodes):
+                new_score = 0 if not MAXST.edges else average_pairwise_distance_fast(MAXST)
+                if new_score < best_score:
+                    best_T = MAXST
+                    best_score = new_score
+
+    # dominating set time
+    if len(G) and DOMINATING_SET:
+
+        DS = list(min_weighted_dominating_set(G))
+        TEST_T = steiner_tree(G, DS)
+        if len(TEST_T) and nx.is_tree(TEST_T):
+            new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+            if new_score < best_score:
+                best_T = TEST_T
+                best_score = new_score
+
     if best_score < existing_best_score:
-        print("yes ----- "+str(-100 * (best_score - existing_best_score)/existing_best_score))
+        print("yes ----- "+str(round(-100 * (best_score - existing_best_score)/existing_best_score,2)) + "% ----- new score "+ str(round(best_score,4)))
 
     else:
-        print("no, " + str(existing_best_score))
+        # print("no, " + str(existing_best_score))
+        pass
+    method_end_time = time.perf_counter()
+    time_seconds = method_end_time - method_start_time
+    if TIME_EACH_OUTPUT:
+        print("time: " + str(round(time_seconds, 2)) + "s")
     return best_T
 
 
-def run_solver(file=""):
+def run_solver():
     """
     Runs the solve() function on all graphs in the inputs folder and saves outputs
     """
