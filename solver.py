@@ -27,6 +27,7 @@ BRUTE_EDGES = True
 
 # DEBUGGING
 TIME_EACH_OUTPUT = True
+SHOW_UPDATE_RESULT = True
 
 
 def subedgelists_from_graph(G):
@@ -142,7 +143,8 @@ def solve(G, T):
     if len(G) and BRUTE_FORCE:
         # create sublists
         sublists = sublists_from_graph(G)
-        print("checking on " + str(len(sublists)) + " sublists")
+        # Print for debug only
+        # print("checking on " + str(len(sublists)) + " sublists")
         for lst in sublists:
             # remove sublist nodes from original graph
             TEST_G = G.copy()
@@ -176,12 +178,12 @@ def solve(G, T):
                 best_T = TEST_T
                 best_score = new_score
 
-    if best_score < existing_best_score:
+    if best_score < existing_best_score and SHOW_UPDATE_RESULT:
         print("yes ----- "+str(round(-100 * (best_score - existing_best_score)/existing_best_score,2)) + "% ----- new score "+ str(round(best_score,4)))
 
-    else:
-        # print("no, " + str(existing_best_score))
-        pass
+    elif SHOW_UPDATE_RESULT:
+        print("no, " + str(existing_best_score))
+
     method_end_time = time.perf_counter()
     time_seconds = method_end_time - method_start_time
     if TIME_EACH_OUTPUT:
@@ -209,6 +211,7 @@ def run_solver():
         sizes.append("large")
         num_graphs.append(401)
     # loop through all inputs and create outputs
+    outputs = []
     if not file:
         for i in range(len(sizes)):
             size = sizes[i]
@@ -218,14 +221,15 @@ def run_solver():
                 G = read_input_file("inputs/"+filepath+".in")
                 print("analyzing "+filepath)
                 EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
-                T = solve(G, EXISTING_T)
-                write_output_file(T, "outputs/"+filepath+".out")
+                outputs.append((solve(G, EXISTING_T), filepath))
     else:  # file-specific running
         filepath = file
         G = read_input_file("inputs/"+filepath+".in")
         EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
         T = solve(G, EXISTING_T)
         write_output_file(T, "outputs/"+filepath+".out")
+    for output in outputs:
+        write_output_file(output[0], "outputs/"+output[1]+".out")
     end_time = time.perf_counter()
     print(f"Process complete. Total time {end_time - start_time:0.4f} seconds")
 
