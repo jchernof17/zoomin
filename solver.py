@@ -103,7 +103,8 @@ def solve(G, T):
     if len(G):
         # create sublists
         sublists = sublists_from_graph(G)
-        print("checking on " + str(len(sublists)) + " sublists")
+        # Print for debug only
+        # print("checking on " + str(len(sublists)) + " sublists")
         for lst in sublists:
             # remove sublist nodes from original graph
             TEST_G = G.copy()
@@ -117,11 +118,14 @@ def solve(G, T):
                     best_T = TEST_T
                     best_score = new_score
 
+    '''
+    # Debug only
     if best_score < existing_best_score:
         print("yes ----- "+str(-100 * (best_score - existing_best_score)/existing_best_score))
 
     else:
         print("no, " + str(existing_best_score))
+    '''
     return best_T
 
 
@@ -145,6 +149,7 @@ def run_solver(file=""):
         sizes.append("large")
         num_graphs.append(401)
     # loop through all inputs and create outputs
+    outputs = []
     if not file:
         for i in range(len(sizes)):
             size = sizes[i]
@@ -154,14 +159,15 @@ def run_solver(file=""):
                 G = read_input_file("inputs/"+filepath+".in")
                 print("analyzing "+filepath)
                 EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
-                T = solve(G, EXISTING_T)
-                write_output_file(T, "outputs/"+filepath+".out")
+                outputs.append((solve(G, EXISTING_T), filepath))
     else:  # file-specific running
         filepath = file
         G = read_input_file("inputs/"+filepath+".in")
         EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
         T = solve(G, EXISTING_T)
         write_output_file(T, "outputs/"+filepath+".out")
+    for output in outputs:
+        write_output_file(output[0], "outputs/"+output[1]+".out")
     end_time = time.perf_counter()
     print(f"Process complete. Total time {end_time - start_time:0.4f} seconds")
 
