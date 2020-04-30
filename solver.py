@@ -4,6 +4,8 @@ from networkx.algorithms.approximation import steiner_tree, min_edge_dominating_
 from networkx.algorithms.mis import maximal_independent_set
 from parse import read_input_file, write_output_file, read_output_file
 from utils import average_pairwise_distance_fast
+from joblib import Parallel, delayed
+import multiprocessing
 
 import time
 from random import sample, randint
@@ -22,8 +24,8 @@ RUN_LIST_LARGE = False
 BRUTE_FORCE = True
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 500
-MAX_SECONDROUND_SUBLISTS = 10000
+MAXIMUM_SUBLISTS = 1000
+MAX_SECONDROUND_SUBLISTS = 2000
 BRUTE_EDGES = False
 EDGE_TINKERING = False
 KRUSKAL_STARTER = False
@@ -242,11 +244,23 @@ def run_solver():
         sizes.append("large")
         num_graphs.append(401)
     # loop through all inputs and create outputs
+    num_cores = multiprocessing.cpu_count()
     outputs = []
+
+    def solver(size, index):
+        filepath = size+"-"+str(index)
+        G = read_input_file("inputs/"+filepath+".in")
+        print("analyzing "+filepath)
+        EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
+        # outputs.append((solve(G, EXISTING_T), filepath))
+        write_output_file(solve(G, EXISTING_T), "outputs/"+filepath+".out")
+
     if not file:
         for i in range(len(sizes)):
             size = sizes[i]
             GRAPH_RANGE = range(START, num_graphs[i])
+            Parallel(n_jobs=num_cores)(delayed(solver)(size, j) for j in improvable_small)
+            '''
             for j in improvable_small:
                 filepath = size+"-"+str(j)
                 G = read_input_file("inputs/"+filepath+".in")
@@ -254,6 +268,7 @@ def run_solver():
                 EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
                 # outputs.append((solve(G, EXISTING_T), filepath))
                 write_output_file(solve(G, EXISTING_T), "outputs/"+filepath+".out")
+            '''
     else:  # file-specific running
         filepath = file
         G = read_input_file("inputs/"+filepath+".in")
