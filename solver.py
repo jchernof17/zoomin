@@ -14,10 +14,10 @@ from random import sample, randint
 
 # INPUT FILES
 improvable_small = [1, 4, 7, 11, 15, 16, 17, 18, 27, 28, 30, 31, 40, 41, 43, 45, 47, 48, 51,
- 52, 55, 58, 61, 63, 66, 71, 72, 75, 77, 78, 81, 82, 83, 88, 89, 95, 99, 104, 117,
+ 52, 55, 58, 61, 63, 66, 71, 72, 75, 78, 81, 82, 83, 88, 89, 95, 99, 104, 117,
  121, 124, 126, 128, 129, 131, 133, 136, 137, 141, 144, 146, 153, 155, 160, 161, 166, 
- 169, 173, 176, 177, 178, 179, 182, 194, 198, 199, 201, 202, 205, 206, 207, 210,
-  212, 213, 214, 215, 217, 226, 227, 228, 230, 231, 232, 233, 234, 237, 239, 242, 251,
+ 169, 173, 176, 177, 178, 179, 182, 194, 198, 199, 202, 205, 206, 210,
+  212, 213, 214, 215, 217, 226, 227, 228, 230, 231, 233, 234, 237, 239, 242, 251,
    253, 258, 260, 261, 269, 270, 271, 274, 278, 279, 287, 290, 291, 294, 295, 301]
 improvable = inferior_outputs.bad_outputs
 bad_small = [file for file in improvable if "small" in file]
@@ -68,7 +68,7 @@ def sublists_from_graph(G, max_iters=MAXIMUM_SUBLISTS):
     lst = list(G.nodes)
     sublists = []
     max_degree = max([out[1] for out in nx.degree(G)])
-    if len(lst) > 50 and False:
+    if len(lst) > 50:
         for node in lst:
             for _ in range(max_iters // len(lst)):
                 try:
