@@ -35,19 +35,28 @@ improvable = ["small-1", "small-4", "small-7", "small-11", "small-15", "small-16
 bad_small = [file for file in improvable if "small" in file]
 bad_medium = [file for file in improvable if "medium" in file]
 bad_large = [file for file in improvable if "large" in file]
+size = len(bad_large) // 2
+bad_large_1 = bad_large[:size]
+bad_large_2 = bad_large[size:]
 file = ""
 START = 1  # Set this to some number between 1 and 303
-RUN_LIST_SMALL = True
+RUN_LIST_SMALL = False
 RUN_LIST_MEDIUM = False
-RUN_LIST_LARGE = False
+RUN_LIST_LARGE_1 = False
+RUN_LIST_LARGE_2 = True
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
 BRUTE_FORCE = True
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
+<<<<<<< HEAD
 MAXIMUM_SUBLISTS = 1024
 MAX_SECONDROUND_SUBLISTS = 8192
+=======
+MAXIMUM_SUBLISTS = 50
+MAX_SECONDROUND_SUBLISTS = 50
+>>>>>>> dd85f842d41b7541baf51c68dacb4f417dbf5da0
 BRUTE_EDGES = True
 EDGE_TINKERING = True
 KRUSKAL_STARTER = False
@@ -287,9 +296,9 @@ def run_solver():
     if RUN_LIST_MEDIUM:
         sizes.append("medium")
         num_graphs.append(304)
-    if RUN_LIST_LARGE:
-        sizes.append("large")
-        num_graphs.append(401)
+    # if RUN_LIST_LARGE:
+    #     sizes.append("large")
+    #     num_graphs.append(401)
     # loop through all inputs and create outputs
     num_cores = multiprocessing.cpu_count()
     outputs = []
@@ -310,8 +319,10 @@ def run_solver():
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_small)
         if RUN_LIST_MEDIUM:
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_medium)
-        if RUN_LIST_LARGE:
-            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large)
+        if RUN_LIST_LARGE_1:
+            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_1)
+        if RUN_LIST_LARGE_2:
+            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_2)
 
     elif not file and not ONLY_RUN_IMPROVABLE:
         for i in range(len(sizes)):
