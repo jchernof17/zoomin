@@ -15,15 +15,15 @@ from random import sample, randint, choices
 
 # INPUT FILES
 improvable = ["small-1", "small-4", "small-7", "small-11", "small-15", "small-16", "small-17", 
-"small-18", "small-27", "small-28", "small-31", "small-40", "small-41", "small-43", 
-"small-45", "small-48", "small-51", "small-52", "small-55", "small-58", "small-61", 
+"small-18", "small-27", "small-31", "small-41", "small-43", 
+"small-45", "small-48", "small-51", "small-52", "small-55", "small-58", 
 "small-66", "small-71", "small-72", "small-75", "small-78", "small-81", "small-82", 
-"small-83", "small-88", "small-89", "small-95", "small-99", "small-117", "small-121",
-"small-126", "small-128", "small-129", "small-131", "small-133", "small-136", 
-"small-137", "small-141", "small-144", "small-146", "small-153", "small-155", "small-160", 
-"small-161", "small-166", "small-169", "small-173", "small-176", "small-177", "small-178", 
+"small-83", "small-89", "small-95", "small-99", "small-117", "small-121",
+"small-126", "small-129", "small-131", "small-133", "small-136", 
+"small-141", "small-144", "small-146", "small-153", "small-155", "small-160", 
+"small-161", "small-166", "small-173", "small-176", "small-177", "small-178", 
 "small-179", "small-182", "small-194", "small-198", "small-199", "small-202", "small-205", 
-"small-206", "small-210", "small-212", "small-213", "small-214", "small-215", "small-217", 
+"small-206", "small-210", "small-213", "small-215", "small-217", 
 "small-226", "small-227", "small-228", "small-230", "small-231", "small-234", 
 "small-237", "small-239", "small-242", "small-251", "small-253", "small-258", "small-260", 
 "small-261", "small-269", "small-270", "small-271", "small-274", "small-278", "small-279", 
@@ -40,18 +40,18 @@ bad_large_1 = bad_large[:size]
 bad_large_2 = bad_large[size:]
 file = ""
 START = 1  # Set this to some number between 1 and 303
-RUN_LIST_SMALL = False
+RUN_LIST_SMALL = True
 RUN_LIST_MEDIUM = False
 RUN_LIST_LARGE_1 = False
-RUN_LIST_LARGE_2 = True
+RUN_LIST_LARGE_2 = False
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
 BRUTE_FORCE = True
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 50
-MAX_SECONDROUND_SUBLISTS = 50
+MAXIMUM_SUBLISTS = 8192
+MAX_SECONDROUND_SUBLISTS = 4096
 BRUTE_EDGES = True
 EDGE_TINKERING = True
 KRUSKAL_STARTER = False
