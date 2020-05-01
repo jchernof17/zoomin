@@ -6,7 +6,7 @@ from parse import read_input_file, write_output_file, read_output_file
 from utils import average_pairwise_distance_fast
 from joblib import Parallel, delayed
 import multiprocessing
-
+import inferior_outputs
 import time
 from random import sample, randint
 
@@ -19,11 +19,16 @@ improvable_small = [1, 4, 7, 11, 15, 16, 17, 18, 27, 28, 30, 31, 40, 41, 43, 45,
  169, 173, 176, 177, 178, 179, 182, 194, 198, 199, 201, 202, 205, 206, 207, 210,
   212, 213, 214, 215, 217, 226, 227, 228, 230, 231, 232, 233, 234, 237, 239, 242, 251,
    253, 258, 260, 261, 269, 270, 271, 274, 278, 279, 287, 290, 291, 294, 295, 301]
+improvable = inferior_outputs.bad_outputs
+bad_small = [file for file in improvable if "small" in file]
+bad_medium = [file for file in improvable if "medium" in file]
+bad_large = [file for file in improvable if "large" in file]
 file = ""
 START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = False
 RUN_LIST_MEDIUM = True
 RUN_LIST_LARGE = False
+ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
 BRUTE_FORCE = True
@@ -41,7 +46,7 @@ SHOW_UPDATE_RESULT = True
 
 
 def subedgelists_from_graph(G):
-    lst = list(G.edges)
+    lst = sorted(list(G.edges), key=lambda e: e[0])
     # the maximum degree of any node in the graph G
     max_degree = max([out[1] for out in nx.degree(G)])
     # there is no way the number of edges is less than the power max_degree has to be raised to in order to reach the number of vertices!
@@ -52,7 +57,7 @@ def subedgelists_from_graph(G):
     # print("analyzing len " + str(double_the_min_number_of_edges) + ":" + str(upper_bound))
     sublists = []
     for _ in range(MAXIMUM_SUBLISTS):
-        sublist = sample(lst, k=randint(lower_bound, upper_bound))
+        sublist = sorted(sample(lst, k=randint(lower_bound, upper_bound)), key=lambda e: e[0])
         if sublist not in sublists:
             sublists.append(sublist)
 
@@ -69,7 +74,7 @@ def sublists_from_graph(G, max_iters=MAXIMUM_SUBLISTS):
                 try:
                     MIS_G = maximal_independent_set(G, [node])
                     while len(MIS_G) < min(3, len(lst) / 8):
-                        MIS_G = maximal_independent_set(G, [node])
+                        MIS_G = sorted(maximal_independent_set(G, [node]))
                     sub = list(MIS_G)
                     if sub not in sublists:
                         sublists.append(sub)
@@ -83,7 +88,7 @@ def sublists_from_graph(G, max_iters=MAXIMUM_SUBLISTS):
     return sublists
 
 
-def solve(G, T):
+def solve(G, T, filename=""):
     """
     Args:
         G: networkx.Graph
@@ -118,8 +123,7 @@ def solve(G, T):
                 best_score = new_score
                 # If we get a record, we continue trying to improve
                 if SHOW_UPDATE_RESULT:
-                    print("|___improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected")
-
+                    print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (Kruskal)")
     # Edge Tinkering method
     if len(G) and EDGE_TINKERING:
         candidate_nodes = [node for node in G.nodes if node not in T.nodes]
@@ -156,6 +160,8 @@ def solve(G, T):
                     best_score = new_score
                     max_iters += MAX_SECONDROUND_SUBLISTS
                     recalculate = True
+                    if SHOW_UPDATE_RESULT:
+                        print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score) / existing_best_score, 2)) + "%" + " detected (Edge Tinkering)")
             i += 1
 
     # Edge-based brute force
@@ -192,7 +198,7 @@ def solve(G, T):
                     best_score = new_score
                     # If we get a record, we continue trying to improve
                     if SHOW_UPDATE_RESULT:
-                        print("|___improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected")
+                        print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score) / existing_best_score, 2)) + "%" + " detected (Brute Force)")
                     sublists.extend(sublists_from_graph(G, max_iters=MAX_SECONDROUND_SUBLISTS))
             i += 1
 
@@ -217,7 +223,7 @@ def solve(G, T):
                 best_score = new_score
 
     if best_score < existing_best_score and SHOW_UPDATE_RESULT:
-        print("|yes ----- " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "% ----- new score "+ str(round(best_score,4)))
+        print("|yes ___ (" + filename + ") " + str(round(-100 * (best_score - existing_best_score) / existing_best_score, 2)) + "% ----- new score " + str(round(best_score, 4)))
 
     elif SHOW_UPDATE_RESULT:
         # print("no, " + str(round(existing_best_score,2)))
@@ -252,19 +258,30 @@ def run_solver():
     num_cores = multiprocessing.cpu_count()
     outputs = []
 
-    def solver(size, index):
-        filepath = size+"-"+str(index)
-        G = read_input_file("inputs/"+filepath+".in")
+    def solver(size="", index="", filename=""):
+        if not size and not index:
+            filepath = filename
+        else:
+            filepath = size + "-" + str(index)
+        G = read_input_file("inputs/"+ filepath +".in")
         print("analyzing "+filepath)
         EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
         # outputs.append((solve(G, EXISTING_T), filepath))
-        write_output_file(solve(G, EXISTING_T), "outputs/"+filepath+".out")
+        write_output_file(solve(G, EXISTING_T, filename=filepath), "outputs/"+filepath+".out")
 
-    if not file:
+    if not file and ONLY_RUN_IMPROVABLE:
+        if RUN_LIST_SMALL:
+            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_small)
+        if RUN_LIST_MEDIUM:
+            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_medium)
+        if RUN_LIST_LARGE:
+            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large)
+
+    if not file and not ONLY_RUN_IMPROVABLE:
         for i in range(len(sizes)):
             size = sizes[i]
             GRAPH_RANGE = range(START, num_graphs[i])
-            Parallel(n_jobs=num_cores)(delayed(solver)(size, j) for j in improvable_small)
+            Parallel(n_jobs=num_cores)(delayed(solver)(size, j) for j in GRAPH_RANGE)
             '''
             for j in improvable_small:
                 filepath = size+"-"+str(j)
