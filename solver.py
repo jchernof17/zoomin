@@ -58,7 +58,7 @@ def subedgelists_from_graph(G):
     # print("analyzing len " + str(double_the_min_number_of_edges) + ":" + str(upper_bound))
     sublists = []
     for _ in range(MAXIMUM_SUBLISTS):
-        sublist = sorted(sample(lst, k=randint(lower_bound, upper_bound)), key=lambda e: (e[0], e)
+        sublist = sorted(sample(lst, k=randint(lower_bound, upper_bound)), key=lambda e: (e[0], e[1]))
         if sublist not in sublists:
             sublists.append(sublist)
 
