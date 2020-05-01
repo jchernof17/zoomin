@@ -68,7 +68,7 @@ def sublists_from_graph(G, max_iters=MAXIMUM_SUBLISTS):
     lst = list(G.nodes)
     sublists = []
     max_degree = max([out[1] for out in nx.degree(G)])
-    if len(lst) > 50:
+    if len(lst) > 50 and False:
         for node in lst:
             for _ in range(max_iters // len(lst)):
                 try:
