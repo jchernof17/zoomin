@@ -291,9 +291,9 @@ def run_solver():
     if RUN_LIST_MEDIUM:
         sizes.append("medium")
         num_graphs.append(304)
-    if RUN_LIST_LARGE:
-        sizes.append("large")
-        num_graphs.append(401)
+    # if RUN_LIST_LARGE:
+    #     sizes.append("large")
+    #     num_graphs.append(401)
     # loop through all inputs and create outputs
     num_cores = multiprocessing.cpu_count()
     outputs = []
@@ -314,8 +314,10 @@ def run_solver():
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_small)
         if RUN_LIST_MEDIUM:
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_medium)
-        if RUN_LIST_LARGE:
-            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large)
+        if RUN_LIST_LARGE_1:
+            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_1)
+        if RUN_LIST_LARGE_2:
+            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_2)
 
     elif not file and not ONLY_RUN_IMPROVABLE:
         for i in range(len(sizes)):
