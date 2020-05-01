@@ -55,6 +55,7 @@ MAX_SECONDROUND_SUBLISTS = 50
 BRUTE_EDGES = True
 EDGE_TINKERING = True
 KRUSKAL_STARTER = False
+TRY_SMALL_NUM_EDGES = False
 
 # DEBUGGING
 TIME_EACH_OUTPUT = True
@@ -143,6 +144,11 @@ def solve(G, T, filename=""):
     else:  # if we already calculated a score of 0, skip this analysis
         return T
     best_T, best_score = T, existing_best_score
+    edges_of_G = list(G.edges)
+
+    if len(G) and len(edges_of_G) < 2500 and TRY_SMALL_NUM_EDGES:
+        # print("(" + filename + ") - attempting small edges selection")
+        small_lsts = []
 
     # Kruskal-like method (doesn't work yet)
     if len(G) > 10 and len(T) > 4 and KRUSKAL_STARTER:
