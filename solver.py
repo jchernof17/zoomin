@@ -6,9 +6,10 @@ from parse import read_input_file, write_output_file, read_output_file
 from utils import average_pairwise_distance_fast
 from joblib import Parallel, delayed
 import multiprocessing
-import inferior_outputs
+#inferior_outputs = ""
+#import inferior_outputs
 import time
-from random import sample, randint
+from random import sample, randint, choices
 
 # CONTROL SWITCHES ###
 
@@ -56,26 +57,44 @@ TIME_EACH_OUTPUT = True
 SHOW_UPDATE_RESULT = True
 
 
-def subedgelists_from_graph(G):
-    lst = sorted(list(G.edges), key=lambda e: e[0])
+def subedgelists_from_graph(G, T=None):
+    # lst = sorted(list(G.edges), key=lambda e: e[0])
+    lst = sorted(G.edges(data=True), key=lambda t: t[2].get('weight', 1))
+    weights = [1 / x[2].get('weight') for x in lst]
     # the maximum degree of any node in the graph G
     max_degree = max([out[1] for out in nx.degree(G)])
     # there is no way the number of edges is less than the power max_degree has to be raised to in order to reach the number of vertices!
     lower_bound = max([len(G) // max_degree - 1, 1])
-
     # there is no way the number of edges is >= the number of vertices!
     upper_bound = min([len(G) - 1, len(lst)])
+    if T:
+        lower_bound = max([lower_bound, int(len(list(T.edges)) * 1)])
+        upper_bound = min([upper_bound, int(len(list(T.edges)) * 1.3)])
     # print("analyzing len " + str(double_the_min_number_of_edges) + ":" + str(upper_bound))
     sublists = []
+    # print("currently have " + str(len(list(T.edges))) + " in best tree, so searching in [" + str(lower_bound) + ":" + str(upper_bound) + "]")
     for _ in range(MAXIMUM_SUBLISTS):
-        sublist = sorted(sample(lst, k=randint(lower_bound, upper_bound)), key=lambda e: (e[0], e[1]))
+        # sublist = sorted(sample(lst, k=randint(lower_bound, upper_bound)), key=lambda e: (e[0], e[1]))
+        sublist = []
+        vertex_set = {}
+        max_tries = 0
+        # max_list_size = randint(lower_bound, upper_bound)
+        while max_tries < 2500 and not nx.is_dominating_set(G, vertex_set):
+            edge = choices(lst, weights=weights)[0]
+            max_tries += 1
+            if not (edge[0] in vertex_set) or not (edge[1] in vertex_set):
+                tup = (edge[0], edge[1])
+                sublist.append(tup)
+                vertex_set[edge[0]] = vertex_set[edge[1]] = 1
+        if nx.is_dominating_set(G, vertex_set):
+            sublist = sorted(sublist)
         if sublist not in sublists:
             sublists.append(sublist)
 
     return sublists
 
 
-def sublists_from_graph(G, max_iters=MAXIMUM_SUBLISTS):
+def sublists_from_graph(G, max_iters=MAXIMUM_SUBLISTS, T=""):
     lst = list(G.nodes)
     sublists = []
     max_degree = max([out[1] for out in nx.degree(G)])
@@ -93,7 +112,12 @@ def sublists_from_graph(G, max_iters=MAXIMUM_SUBLISTS):
                     pass
     else:
         for _ in range(max_iters):
-            sublist = sorted(sample(G.nodes, randint(min([len(G), len(G) // max_degree]), len(G))))
+            lower_bound = min([len(G), len(G) // max_degree])
+            upper_bound = len(G)
+            if T:
+                lower_bound = max([lower_bound, (len(T) * 0.5)])
+                upper_bound = min([upper_bound, (len(T) * 1.3)])
+            sublist = sorted(sample(G.nodes, randint(lower_bound, upper_bound)))
             if sublist not in sublists:
                 sublists.append(sublist)
     return sublists
@@ -177,16 +201,17 @@ def solve(G, T, filename=""):
 
     # Edge-based brute force
     if len(G) and BRUTE_EDGES:
-        subedgelists = subedgelists_from_graph(G)
+        subedgelists = subedgelists_from_graph(G, best_T)
         for sublist in subedgelists:
             TEST_T = G.edge_subgraph(sublist).copy()
             # print(sublist)
             if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
                 new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
                 if new_score < best_score:
+                    if SHOW_UPDATE_RESULT:
+                        print("(" + filename + ") _EDGE_ improvement of " + str(round(-100 * (new_score - existing_best_score) / existing_best_score, 2)) + "%" + " detected (" + str(len(list(best_T.edges))) + " --> " + str(len(list(TEST_T.edges))) + ")")
                     best_T = TEST_T
                     best_score = new_score
-
     # Random guessing/brute force
     if len(G) and BRUTE_FORCE:
         # create sublists
@@ -205,11 +230,11 @@ def solve(G, T, filename=""):
             if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
                 new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
                 if new_score < best_score:
+                    if SHOW_UPDATE_RESULT:
+                        print("(" + filename + ") _NODE_ improvement of " + str(round(-100 * (new_score - existing_best_score) / existing_best_score, 2)) + "%" + " detected (" + str(len(best_T)) + " --> " + str(len(TEST_T)) + ")")
                     best_T = TEST_T
                     best_score = new_score
                     # If we get a record, we continue trying to improve
-                    if SHOW_UPDATE_RESULT:
-                        print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score) / existing_best_score, 2)) + "%" + " detected (Brute Force)")
                     sublists.extend(sublists_from_graph(G, max_iters=MAX_SECONDROUND_SUBLISTS))
             i += 1
 
