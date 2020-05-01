@@ -35,19 +35,23 @@ improvable = ["small-1", "small-4", "small-7", "small-11", "small-15", "small-16
 bad_small = [file for file in improvable if "small" in file]
 bad_medium = [file for file in improvable if "medium" in file]
 bad_large = [file for file in improvable if "large" in file]
+size = len(bad_large) // 2
+bad_large_1 = bad_large[:size]
+bad_large_2 = bad_large[size:]
 file = ""
 START = 1  # Set this to some number between 1 and 303
-RUN_LIST_SMALL = True
+RUN_LIST_SMALL = False
 RUN_LIST_MEDIUM = False
-RUN_LIST_LARGE = False
+RUN_LIST_LARGE_1 = False
+RUN_LIST_LARGE_2 = True
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
 BRUTE_FORCE = True
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 32768
-MAX_SECONDROUND_SUBLISTS = 8192
+MAXIMUM_SUBLISTS = 50
+MAX_SECONDROUND_SUBLISTS = 50
 BRUTE_EDGES = True
 EDGE_TINKERING = True
 KRUSKAL_STARTER = False
