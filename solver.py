@@ -21,16 +21,16 @@ improvable_small = [1, 4, 7, 11, 15, 16, 17, 18, 24, 27, 28, 30, 31, 33, 40, 41,
    253, 258, 260, 261, 266, 269, 270, 271, 274, 278, 279, 287, 290, 291, 294, 295, 301]
 file = ""
 START = 1  # Set this to some number between 1 and 303
-RUN_LIST_SMALL = True
-RUN_LIST_MEDIUM = False
+RUN_LIST_SMALL = False
+RUN_LIST_MEDIUM = True
 RUN_LIST_LARGE = False
 
 # STRATEGIES
 BRUTE_FORCE = True
-MAX_SPANNING_TREE = True
-DOMINATING_SET = True
-MAXIMUM_SUBLISTS = 16384
-MAX_SECONDROUND_SUBLISTS = 16384
+MAX_SPANNING_TREE = False
+DOMINATING_SET = False
+MAXIMUM_SUBLISTS = 2500
+MAX_SECONDROUND_SUBLISTS = 2500
 BRUTE_EDGES = True
 EDGE_TINKERING = True
 KRUSKAL_STARTER = False
@@ -125,7 +125,7 @@ def solve(G, T):
         candidate_nodes = [node for node in G.nodes if node not in T.nodes]
         candidate_edges = sorted([e for e in G.edges if e not in list(T.edges) and ((e[0] in candidate_nodes) ^ (e[1] in candidate_nodes))])
         # print(list(T.edges))
-        max_iters = 10000
+        max_iters = MAXIMUM_SUBLISTS
         i = 0
         recalculate = False
         while i < max_iters:
@@ -148,14 +148,14 @@ def solve(G, T):
             TEST_T.remove_edges_from(remove_edge_sample)
 
             if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
-                    new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
-                    if new_score < best_score:
-                        if SHOW_UPDATE_RESULT:
-                            print("|")
-                        best_T = TEST_T
-                        best_score = new_score
-                        max_iters += 3000
-                        recalculate = True
+                new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                if new_score < best_score:
+                    if SHOW_UPDATE_RESULT:
+                        print("|")
+                    best_T = TEST_T
+                    best_score = new_score
+                    max_iters += MAX_SECONDROUND_SUBLISTS
+                    recalculate = True
             i += 1
 
     # Edge-based brute force
@@ -200,10 +200,10 @@ def solve(G, T):
     if len(G) and MAX_SPANNING_TREE:
         MAXST = nx.maximum_spanning_tree(G)
         if len(MAXST) and nx.is_tree(MAXST) and nx.is_dominating_set(G, MAXST.nodes):
-                new_score = 0 if not MAXST.edges else average_pairwise_distance_fast(MAXST)
-                if new_score < best_score:
-                    best_T = MAXST
-                    best_score = new_score
+            new_score = 0 if not MAXST.edges else average_pairwise_distance_fast(MAXST)
+            if new_score < best_score:
+                best_T = MAXST
+                best_score = new_score
 
     # dominating set 
     if len(G) and DOMINATING_SET:
