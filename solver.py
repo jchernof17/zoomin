@@ -16,15 +16,15 @@ from random import sample, randint, choices
 # INPUT FILES
 improvable = ["small-1", "small-7", "small-15", "small-16", "small-17", 
 "small-18", "small-27", "small-41", "small-43", "small-45", "small-55",
-"small-66", "small-71", "small-72", "small-75", "small-78", "small-81", 
-"small-83", "small-89", "small-95", "small-99", "small-117", "small-121",
+"small-66", "small-71", "small-72", "small-75", "small-78", 
+"small-89", "small-95", "small-99", "small-117", "small-121",
 "small-126", "small-129", "small-131", "small-133", "small-136", "small-144",
 "small-161", "small-166", "small-177", "small-178", 
-"small-194", "small-199", "small-205", "small-206", "small-213", "small-217", 
+"small-194", "small-205", "small-206", "small-213", "small-217", 
 "small-227", "small-228", "small-231", "small-234", 
 "small-237", "small-239", "small-242", "small-253", "small-258", "small-260", 
-"small-269", "small-274", "small-278",
-"small-287", "small-291", "small-301", "medium-1", "medium-4",
+"small-269", "small-274", "small-278","small-287", "small-291", "small-301", 
+"medium-1", "medium-4",
 "medium-6", "medium-7", "medium-11", "medium-15", "medium-16",
 "medium-17", "medium-18", "medium-21", "medium-23",
 "medium-26", "medium-27", "medium-28", "medium-29", "medium-30", "medium-31", "medium-34", 
@@ -106,7 +106,7 @@ ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 BRUTE_FORCE = True
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 16384
+MAXIMUM_SUBLISTS = 65536
 MAX_SECONDROUND_SUBLISTS = 1024
 BRUTE_EDGES = True
 EDGE_TINKERING = True
@@ -277,7 +277,7 @@ def solve(G, T, filename=""):
                     if SHOW_UPDATE_RESULT:
                         print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (Kruskal)")
             i = i + 1
-            
+
     # Replace Large Edges
     if len(G) and LARGE_SHORTEST_PATH:
         # Replace the largest edges in the tree with a shorter path between the nodes
@@ -285,20 +285,22 @@ def solve(G, T, filename=""):
         iterations = len(edges)
         for i in range(iterations):
             largest_edge = edges[0]
-            curr_edges = edges[1:]
+            edges = edges[1:]
+            largest_edge = (largest_edge[0], largest_edge[1])
+            T_edges = list(best_T.edges)
+            T_edges.remove(largest_edge)
             source, target = largest_edge[0], largest_edge[1]
             path = nx.dijkstra_path(G, source, target)
             new_edges = [(path[i], path[i+1]) for i in range(len(path)-1)]
-            curr_edges.append(new_edges)
-            TEST_T = G.edge_subgraph(curr_edges).copy()
+            T_edges.extend(new_edges)
+            TEST_T = G.edge_subgraph(T_edges).copy()
             if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
                 new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
                 if new_score < best_score:
                     best_T = TEST_T
                     best_score = new_score
-                    edges = sorted(best_T.edges(data=True), key=lambda t: t[2].get('weight', 1), reverse=True)
-                if SHOW_UPDATE_RESULT:
-                    print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (Replace Large)")
+                    if SHOW_UPDATE_RESULT:
+                        print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (Replace Large)")
 
     # Edge Tinkering method
     if len(G) and EDGE_TINKERING:
@@ -478,15 +480,6 @@ def run_solver():
             size = sizes[i]
             GRAPH_RANGE = range(START, num_graphs[i])
             Parallel(n_jobs=num_cores)(delayed(solver)(size, j) for j in GRAPH_RANGE)
-            '''
-            for j in improvable_small:
-                filepath = size+"-"+str(j)
-                G = read_input_file("inputs/"+filepath+".in")
-                print("analyzing "+filepath)
-                EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
-                # outputs.append((solve(G, EXISTING_T), filepath))
-                write_output_file(solve(G, EXISTING_T), "outputs/"+filepath+".out")
-            '''
     elif file:  # file-specific running
         filepath = file
         G = read_input_file("inputs/"+filepath+".in")
