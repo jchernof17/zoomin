@@ -1,6 +1,6 @@
 import networkx as nx
 from networkx.algorithms.approximation import steiner_tree, min_edge_dominating_set, min_weighted_dominating_set
-# from networkx.algorithms.shortest_paths.weighted import single_source_dijkstra_path
+from networkx.algorithms.shortest_paths.weighted import dijkstra_path
 from networkx.algorithms.mis import maximal_independent_set
 from parse import read_input_file, write_output_file, read_output_file
 from utils import average_pairwise_distance_fast, edge_lower_bound, edge_upper_bound
@@ -15,19 +15,16 @@ from random import sample, randint, choices
 
 # INPUT FILES
 improvable = ["small-1", "small-7", "small-15", "small-16", "small-17", 
-"small-18", "small-27", "small-31", "small-41", "small-43", 
-"small-45", "small-52", "small-55", "small-58", 
+"small-18", "small-27", "small-41", "small-43", "small-45", "small-55",
 "small-66", "small-71", "small-72", "small-75", "small-78", "small-81", 
 "small-83", "small-89", "small-95", "small-99", "small-117", "small-121",
-"small-126", "small-129", "small-131", "small-133", "small-136", 
-"small-144", "small-153", "small-155",
-"small-161", "small-166", "small-173", "small-177", "small-178", 
-"small-182", "small-194", "small-198", "small-199", "small-205", 
-"small-206", "small-213", "small-217", 
-"small-226", "small-227", "small-228", "small-231", "small-234", 
-"small-237", "small-239", "small-242", "small-251", "small-253", "small-258", "small-260", 
+"small-126", "small-129", "small-131", "small-133", "small-136", "small-144",
+"small-161", "small-166", "small-177", "small-178", 
+"small-194", "small-198", "small-199", "small-205", "small-206", "small-213", "small-217", 
+"small-227", "small-228", "small-231", "small-234", 
+"small-237", "small-239", "small-242", "small-253", "small-258", "small-260", 
 "small-269", "small-274", "small-278",
-"small-287", "small-290", "small-291", "small-294", "small-301", "medium-1", "medium-4",
+"small-287", "small-291", "small-301", "medium-1", "medium-4",
 "medium-6", "medium-7", "medium-11", "medium-15", "medium-16",
 "medium-17", "medium-18", "medium-21", "medium-23",
 "medium-26", "medium-27", "medium-28", "medium-29", "medium-30", "medium-31", "medium-34", 
@@ -98,23 +95,24 @@ bad_large_4 = bad_large[3 * size:]
 file = ""
 START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = True
-RUN_LIST_MEDIUM = True
-RUN_LIST_LARGE_1 = True
-RUN_LIST_LARGE_2 = True
-RUN_LIST_LARGE_3 = True
-RUN_LIST_LARGE_4 = True
+RUN_LIST_MEDIUM = False
+RUN_LIST_LARGE_1 = False
+RUN_LIST_LARGE_2 = False
+RUN_LIST_LARGE_3 = False
+RUN_LIST_LARGE_4 = False
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
-BRUTE_FORCE = False
+BRUTE_FORCE = True
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 300
-MAX_SECONDROUND_SUBLISTS = 100
-BRUTE_EDGES = False
-EDGE_TINKERING = False
+MAXIMUM_SUBLISTS = 16384
+MAX_SECONDROUND_SUBLISTS = 1024
+BRUTE_EDGES = True
+EDGE_TINKERING = True
 KRUSKAL_STARTER = True
 TRY_SMALL_NUM_EDGES = False
+LARGE_SHORTEST_PATH = False
 DISPLAY_HUD = False
 
 # DEBUGGING
@@ -147,7 +145,7 @@ def subedgelists_from_graph(G, T=None):
     sublists = []
     #print("edge: \t (" + str(lower_bound) + ") \t (" + str(upper_bound) + ") \t (" + str(len(T) - 1) + ")")
     # print("currently have " + str(len(list(T.edges))) + " in best tree, so searching in [" + str(lower_bound) + ":" + str(upper_bound) + "]")
-    for _ in range(MAXIMUM_SUBLISTS * 30):
+    for _ in range(MAXIMUM_SUBLISTS):
         # sublist = sorted(sample(lst, k=randint(lower_bound, upper_bound)), key=lambda e: (e[0], e[1]))
         sublist = []
         vertex_set = {}
@@ -279,6 +277,28 @@ def solve(G, T, filename=""):
                     if SHOW_UPDATE_RESULT:
                         print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (Kruskal)")
             i = i + 1
+    # Replace Large Edges
+    if len(G) and LARGE_SHORTEST_PATH:
+        # Replace the largest edges in the tree with a shorter path between the nodes
+        edges = sorted(best_T.edges(data=True), key=lambda t: t[2].get('weight', 1), reverse=True)
+        improve = True
+        while improve and edges:
+            largest_edge = edges[0]
+            curr_edges = edges[1:]
+            source, target = largest_edge[0], largest_edge[1]
+            path = nx.dijkstra_path(G, source, target)
+            new_edges = [(path[i], path[i+1]) for i in range(len(path)-1)]
+            curr_edges.append(new_edges)
+            TEST_T = G.edge_subgraph(curr_edges).copy()
+            if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                if new_score < best_score:
+                    best_T = TEST_T
+                    best_score = new_score
+                    edges = sorted(best_T.edges(data=True), key=lambda t: t[2].get('weight', 1), reverse=True)
+                if SHOW_UPDATE_RESULT:
+                    print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (Replace Large)")
+
     # Edge Tinkering method
     if len(G) and EDGE_TINKERING:
         candidate_nodes = [node for node in G.nodes if node not in T.nodes]
