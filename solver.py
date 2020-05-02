@@ -96,22 +96,22 @@ bad_large_4 = bad_large[3 * size:]
 file = ""
 START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = True
-RUN_LIST_MEDIUM = True
-RUN_LIST_LARGE = True
+RUN_LIST_MEDIUM = False
+RUN_LIST_LARGE = False
 RUN_LIST_LARGE_1 = False
 RUN_LIST_LARGE_2 = False
 RUN_LIST_LARGE_3 = False
 RUN_LIST_LARGE_4 = False
-ONLY_RUN_IMPROVABLE = False  # don't you dare set this to false...
+ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
-BRUTE_FORCE = False
+BRUTE_FORCE = True
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 16384
+MAXIMUM_SUBLISTS = 8192
 MAX_SECONDROUND_SUBLISTS = 1024
-BRUTE_EDGES = False
-EDGE_TINKERING = False
+BRUTE_EDGES = True
+EDGE_TINKERING = True
 KRUSKAL_STARTER = True
 TRY_REMOVING_LARGEST_EDGE = True  # also known as tree cut
 TRY_SMALL_NUM_EDGES = False
@@ -502,8 +502,8 @@ def run_solver():
         print("analyzing "+filepath)
         EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
         # outputs.append((solve(G, EXISTING_T), filepath))
-        um = solve(G, EXISTING_T, filename=filepath)
-        # write_output_file(solve(G, EXISTING_T, filename=filepath), "outputs/"+filepath+".out")
+        # um = solve(G, EXISTING_T, filename=filepath)
+        write_output_file(solve(G, EXISTING_T, filename=filepath), "outputs/"+filepath+".out")
 
     if not file and ONLY_RUN_IMPROVABLE:
         if RUN_LIST_SMALL:
