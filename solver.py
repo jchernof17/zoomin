@@ -21,12 +21,12 @@ improvable = ["small-1", "small-7", "small-11", "small-15", "small-16", "small-1
 "small-83", "small-89", "small-95", "small-99", "small-117", "small-121",
 "small-126", "small-129", "small-131", "small-133", "small-136", 
 "small-141", "small-144", "small-146", "small-153", "small-155", "small-160", 
-"small-161", "small-166", "small-173", "small-176", "small-177", "small-178", 
+"small-161", "small-166", "small-173", "small-177", "small-178", 
 "small-182", "small-194", "small-198", "small-199", "small-202", "small-205", 
 "small-206", "small-213", "small-215", "small-217", 
 "small-226", "small-227", "small-228", "small-231", "small-234", 
 "small-237", "small-239", "small-242", "small-251", "small-253", "small-258", "small-260", 
-"small-261", "small-269", "small-270", "small-274", "small-278", "small-279", 
+"small-269", "small-270", "small-274", "small-278", "small-279", 
 "small-287", "small-290", "small-291", "small-294", "small-295", "small-301", "medium-1", "medium-4",
 "medium-5", "medium-6", "medium-7", "medium-8", "medium-10", "medium-11", "medium-15", "medium-16",
 "medium-17", "medium-18", "medium-19", "medium-21", "medium-22", "medium-23", "medium-24", 
@@ -48,7 +48,7 @@ RUN_LIST_SMALL = True
 RUN_LIST_MEDIUM = False
 RUN_LIST_LARGE_1 = False
 RUN_LIST_LARGE_2 = False
-RUN_LIST_LARGE_3 = True
+RUN_LIST_LARGE_3 = False
 RUN_LIST_LARGE_4 = False
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
