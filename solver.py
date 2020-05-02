@@ -2,6 +2,7 @@ import networkx as nx
 from networkx.algorithms.approximation import steiner_tree, min_edge_dominating_set, min_weighted_dominating_set
 from networkx.algorithms.shortest_paths.weighted import dijkstra_path
 from networkx.algorithms.mis import maximal_independent_set
+from networkx.algorithms.components import node_connected_component
 from parse import read_input_file, write_output_file, read_output_file
 from utils import average_pairwise_distance_fast, edge_lower_bound, edge_upper_bound
 from joblib import Parallel, delayed
@@ -92,6 +93,7 @@ bad_large_1 = bad_large[:size]
 bad_large_2 = bad_large[size:2 * size]
 bad_large_3 = bad_large[2 * size:3 * size]
 bad_large_4 = bad_large[3 * size:]
+print(bad_large_3)
 file = ""
 START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = True
@@ -111,12 +113,13 @@ MAX_SECONDROUND_SUBLISTS = 1024
 BRUTE_EDGES = False
 EDGE_TINKERING = False
 KRUSKAL_STARTER = True
+TRY_REMOVING_LARGEST_EDGE = True  # also known as tree cut
 TRY_SMALL_NUM_EDGES = False
 LARGE_SHORTEST_PATH = True
 DISPLAY_HUD = False
 
 # DEBUGGING
-TIME_EACH_OUTPUT = True
+TIME_EACH_OUTPUT = False
 SHOW_UPDATE_RESULT = True
 
 
@@ -231,25 +234,35 @@ def solve(G, T, filename=""):
     best_T, best_score = T, existing_best_score
     edges_of_G = list(G.edges)
 
-    if len(G) and TRY_SMALL_NUM_EDGES:
+    # Tree Cut Method
+    if len(G) and len(best_T) > 4 and TRY_REMOVING_LARGEST_EDGE:
         # print("(" + filename + ") - attempting small edges selection")
-        small_lsts = []
-        max_degree_vertex = max([out[0] for out in nx.degree(G)], key=lambda v: G.degree[v])
-        edges_of_max_vertex = list(G.edges([max_degree_vertex]))
-        neighbors_of_max_vertex = sorted(list(G.neighbors(max_degree_vertex)), key=lambda v: G.degree[v])
-        for neighbor in neighbors_of_max_vertex:
-            if neighbor != max_degree_vertex and nx.is_dominating_set(G, [neighbor, max_degree_vertex]):
-                # create that edge
-                edge = (max_degree_vertex, neighbor)
-                TEST_T = G.edge_subgraph([edge]).copy()
-                new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
-                if new_score < best_score:
-                    best_T = TEST_T
-                    best_score = new_score
-                    # If we get a record, we continue trying to improve
-                    if SHOW_UPDATE_RESULT:
-                        print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (small num edges)")
-
+        tree_edges = sorted(best_T.edges(data=True), key=lambda t: t[2].get('weight', 1))
+        graph_edges = sorted(G.edges(data=True),key=lambda t: t[2].get('weight', 1))
+        # max_tree_edges = [tree_edges[(len(tree_edges)-1)][:2], tree_edges[(len(tree_edges)-2)][:2], tree_edges[(len(tree_edges)-3)][:2]]  # remove (u,v) tuple of max tree edge
+        max_tree_edges = [edge[:2] for edge in tree_edges]
+        tree_edges_no_weight = [(edge[0],edge[1]) for edge in tree_edges]
+        CUT_T = G.edge_subgraph(tree_edges_no_weight).copy()
+        for max_tree_edge in max_tree_edges:
+            CUT_T.remove_edge(max_tree_edge[0], max_tree_edge[1])
+            cut_t_edges = list(CUT_T.edges)
+            component_1 = list(node_connected_component(CUT_T, max_tree_edge[0]))
+            component_2 = list(node_connected_component(CUT_T, max_tree_edge[1]))
+            crossing_edges = [edge[:2] for edge in graph_edges if (edge[0] in component_1 and edge[1] in component_2) or (edge[1] in component_1 and edge[0] in component_2)] 
+            for crossing_edge in crossing_edges:
+                # print(crossing_edge)
+                test_t_edges = cut_t_edges.copy()
+                test_t_edges.append(crossing_edge)
+                TEST_T = G.edge_subgraph(test_t_edges).copy()
+                if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                    new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                    if new_score < best_score:
+                        best_T = TEST_T
+                        best_score = new_score
+                        # If we get a record, we continue trying to improve
+                        if SHOW_UPDATE_RESULT:
+                            #print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (tree cut)")
+                            pass
 
 
     # Kruskal-like method (doesn't work yet)
@@ -456,7 +469,7 @@ def run_solver():
         else:
             filepath = size + "-" + str(index)
         G = read_input_file("inputs/"+ filepath +".in")
-        print("analyzing "+filepath)
+        # print("analyzing "+filepath)
         EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
         # outputs.append((solve(G, EXISTING_T), filepath))
         write_output_file(solve(G, EXISTING_T, filename=filepath), "outputs/"+filepath+".out")
