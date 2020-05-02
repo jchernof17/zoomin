@@ -20,11 +20,11 @@ improvable = ["small-1", "small-7", "small-15", "small-16", "small-17",
 "small-66", "small-71", "small-72", "small-78", 
 "small-89", "small-99", "small-117", "small-121",
 "small-126", "small-129", "small-131", "small-133", "small-136", "small-144",
-"small-161", "small-166", "small-177", "small-178", 
-"small-194", "small-205", "small-206", "small-213", "small-217", 
+"small-161", "small-166", "small-178", 
+"small-205", "small-206", "small-213", "small-217", 
 "small-227", "small-228", "small-231", "small-234", 
 "small-237", "small-239", "small-242", "small-253", "small-258", "small-260", 
-"small-269", "small-274", "small-278","small-287", "small-291", "small-301", 
+"small-278","small-287", "small-291", "small-301", 
 "medium-1", "medium-4",
 "medium-6", "medium-7", "medium-11", "medium-15", "medium-16",
 "medium-17", "medium-18", "medium-21", "medium-23",
@@ -93,15 +93,14 @@ bad_large_1 = bad_large[:size]
 bad_large_2 = bad_large[size:2 * size]
 bad_large_3 = bad_large[2 * size:3 * size]
 bad_large_4 = bad_large[3 * size:]
-print(bad_large_3)
 file = ""
 START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = True
-RUN_LIST_MEDIUM = False
-RUN_LIST_LARGE_1 = False
-RUN_LIST_LARGE_2 = False
-RUN_LIST_LARGE_3 = False
-RUN_LIST_LARGE_4 = False
+RUN_LIST_MEDIUM = True
+RUN_LIST_LARGE_1 = True
+RUN_LIST_LARGE_2 = True
+RUN_LIST_LARGE_3 = True
+RUN_LIST_LARGE_4 = True
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
@@ -298,7 +297,6 @@ def solve(G, T, filename=""):
         iterations = len(edges)
         for i in range(iterations):
             largest_edge = edges[0]
-            edges = edges[1:]
             largest_edge = (largest_edge[0], largest_edge[1])
             T_edges = list(best_T.edges)
             T_edges.remove(largest_edge)
@@ -312,6 +310,7 @@ def solve(G, T, filename=""):
                 if new_score < best_score:
                     best_T = TEST_T
                     best_score = new_score
+                    edges = sorted(best_T.edges(data=True), key=lambda t: t[2].get('weight', 1), reverse=True)
                     if SHOW_UPDATE_RESULT:
                         print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (Replace Large)")
 
