@@ -14,24 +14,77 @@ from random import sample, randint, choices
 # CONTROL SWITCHES ###
 
 # INPUT FILES
-improvable = ["small-1", "small-7", "small-11", "small-15", "small-16", "small-17", 
+improvable = ["small-1", "small-7", "small-15", "small-16", "small-17", 
 "small-18", "small-27", "small-31", "small-41", "small-43", 
 "small-45", "small-52", "small-55", "small-58", 
-"small-66", "small-71", "small-72", "small-75", "small-78", "small-81", "small-82", 
+"small-66", "small-71", "small-72", "small-75", "small-78", "small-81", 
 "small-83", "small-89", "small-95", "small-99", "small-117", "small-121",
 "small-126", "small-129", "small-131", "small-133", "small-136", 
-"small-141", "small-144", "small-153", "small-155", "small-160", 
+"small-144", "small-153", "small-155",
 "small-161", "small-166", "small-173", "small-177", "small-178", 
-"small-182", "small-194", "small-198", "small-199", "small-202", "small-205", 
+"small-182", "small-194", "small-198", "small-199", "small-205", 
 "small-206", "small-213", "small-217", 
 "small-226", "small-227", "small-228", "small-231", "small-234", 
 "small-237", "small-239", "small-242", "small-251", "small-253", "small-258", "small-260", 
 "small-269", "small-274", "small-278",
 "small-287", "small-290", "small-291", "small-294", "small-301", "medium-1", "medium-4",
-"medium-5", "medium-6", "medium-7", "medium-8", "medium-10", "medium-11", "medium-15", "medium-16",
-"medium-17", "medium-18", "medium-19", "medium-21", "medium-22", "medium-23", "medium-24", 
+"medium-6", "medium-7", "medium-11", "medium-15", "medium-16",
+"medium-17", "medium-18", "medium-21", "medium-23",
 "medium-26", "medium-27", "medium-28", "medium-29", "medium-30", "medium-31", "medium-34", 
-"medium-35", "medium-37", "medium-38", "medium-39", "medium-40", "medium-41", "medium-42", "medium-43", "medium-44", "medium-45", "medium-46", "medium-47", "medium-48", "medium-49", "medium-51", "medium-52", "medium-55", "medium-56", 'medium-58', 'medium-61', 'medium-63', 'medium-64', 'medium-65', 'medium-66', 'medium-67', 'medium-68', 'medium-70', 'medium-71', 'medium-72', 'medium-75', 'medium-77', 'medium-78', 'medium-80', 'medium-81', 'medium-82', 'medium-83', 'medium-84', 'medium-85', 'medium-86', 'medium-87', 'medium-88', 'medium-89', 'medium-91', 'medium-92', 'medium-93', 'medium-95', 'medium-98', 'medium-99', 'medium-100', 'medium-101', 'medium-103', 'medium-104', 'medium-105', 'medium-106', 'medium-108', 'medium-112', 'medium-113', 'medium-114', 'medium-115', 'medium-116', 'medium-117', 'medium-118', 'medium-119', 'medium-120', 'medium-121', 'medium-122', 'medium-124', 'medium-126', 'medium-127', 'medium-128', 'medium-129', 'medium-130', 'medium-131', 'medium-133', 'medium-134', 'medium-135', 'medium-136', 'medium-137', 'medium-139', 'medium-141', 'medium-143', 'medium-146', 'medium-147', 'medium-150', 'medium-151', 'medium-153', 'medium-154', 'medium-155', 'medium-156', 'medium-158', 'medium-160', 'medium-161', 'medium-162', 'medium-163', 'medium-166', 'medium-167', 'medium-168', 'medium-169', 'medium-171', 'medium-172', 'medium-173', 'medium-174', 'medium-176', 'medium-177', 'medium-178', 'medium-179', 'medium-180', 'medium-181', 'medium-182', 'medium-183', 'medium-185', 'medium-186', 'medium-187', 'medium-188', 'medium-190', 'medium-191', 'medium-192', 'medium-193', 'medium-194', 'medium-195', 'medium-196', 'medium-198', 'medium-199', 'medium-200', 'medium-201', 'medium-202', 'medium-206', 'medium-207', 'medium-209', 'medium-210', 'medium-211', 'medium-212', 'medium-213', 'medium-214', 'medium-215', 'medium-216', 'medium-217', 'medium-218', 'medium-219', 'medium-220', 'medium-222', 'medium-223', 'medium-224', 'medium-225', 'medium-226', 'medium-227', 'medium-230', 'medium-231', 'medium-232', 'medium-235', 'medium-236', 'medium-237', 'medium-238', 'medium-239', 'medium-241', 'medium-242', 'medium-244', 'medium-246', 'medium-247', 'medium-249', 'medium-250', 'medium-251', 'medium-252', 'medium-253', 'medium-254', 'medium-255', 'medium-256', 'medium-258', 'medium-260', 'medium-261', 'medium-262', 'medium-263', 'medium-264', 'medium-265', 'medium-266', 'medium-267', 'medium-269', 'medium-270', 'medium-271', 'medium-272', 'medium-273', 'medium-274', 'medium-275', 'medium-278', 'medium-279', 'medium-284', 'medium-285', 'medium-286', 'medium-287', 'medium-288', 'medium-290', 'medium-291', 'medium-293', 'medium-294', 'medium-295', 'medium-297', 'medium-299', 'medium-300', 'medium-301', 'medium-302', 'large-1', 'large-3', 'large-4', 'large-5', 'large-6', 'large-7', 'large-8', 'large-10', 'large-11', 'large-12', 'large-13', 'large-14', 'large-15', 'large-16', 'large-17', 'large-18', 'large-20', 'large-21', 'large-22', 'large-23', 'large-24', 'large-25', 'large-26', 'large-27', 'large-28', 'large-30', 'large-31', 'large-33', 'large-34', 'large-35', 'large-37', 'large-38', 'large-39', 'large-40', 'large-41', 'large-42', 'large-43', 'large-44', 'large-45', 'large-46', 'large-47', 'large-48', 'large-49', 'large-51', 'large-52', 'large-53', 'large-55', 'large-56', 'large-57', 'large-58', 'large-59', 'large-60', 'large-61', 'large-63', 'large-64', 'large-65', 'large-66', 'large-67', 'large-70', 'large-72', 'large-73', 'large-75', 'large-77', 'large-78', 'large-79', 'large-80', 'large-81', 'large-82', 'large-83', 'large-84', 'large-85', 'large-86', 'large-87', 'large-88', 'large-89', 'large-91', 'large-92', 'large-93', 'large-95', 'large-96', 'large-97', 'large-98', 'large-99', 'large-100', 'large-101', 'large-103', 'large-104', 'large-105', 'large-106', 'large-108', 'large-112', 'large-113', 'large-114', 'large-116', 'large-117', 'large-118', 'large-119', 'large-120', 'large-121', 'large-122', 'large-124', 'large-126', 'large-127', 'large-128', 'large-129', 'large-130', 'large-131', 'large-133', 'large-134', 'large-135', 'large-136', 'large-137', 'large-139', 'large-141', 'large-143', 'large-145', 'large-146', 'large-147', 'large-150', 'large-151', 'large-153', 'large-154', 'large-155', 'large-156', 'large-157', 'large-158', 'large-160', 'large-161', 'large-162', 'large-163', 'large-166', 'large-167', 'large-168', 'large-169', 'large-171', 'large-172', 'large-173', 'large-174', 'large-176', 'large-177', 'large-178', 'large-180', 'large-181', 'large-182', 'large-183', 'large-184', 'large-185', 'large-186', 'large-187', 'large-188', 'large-190', 'large-191', 'large-192', 'large-193', 'large-194', 'large-195', 'large-196', 'large-198', 'large-199', 'large-200', 'large-201', 'large-202', 'large-203', 'large-205', 'large-206', 'large-207', 'large-209', 'large-210', 'large-211', 'large-212', 'large-213', 'large-214', 'large-215', 'large-217', 'large-218', 'large-219', 'large-220', 'large-221', 'large-222', 'large-225', 'large-226', 'large-227', 'large-228', 'large-230', 'large-231', 'large-232', 'large-233', 'large-234', 'large-235', 'large-236', 'large-237', 'large-238', 'large-239', 'large-241', 'large-242', 'large-243', 'large-244', 'large-246', 'large-247', 'large-250', 'large-251', 'large-252', 'large-253', 'large-254', 'large-255', 'large-256', 'large-258', 'large-260', 'large-261', 'large-262', 'large-263', 'large-264', 'large-265', 'large-266', 'large-267', 'large-268', 'large-269', 'large-270', 'large-271', 'large-272', 'large-273', 'large-274', 'large-275', 'large-278', 'large-279', 'large-282', 'large-283', 'large-284', 'large-285', 'large-286', 'large-287', 'large-288', 'large-290', 'large-291', 'large-293', 'large-294', 'large-295', 'large-297', 'large-299', 'large-300', 'large-301', 'large-302', 'large-304', 'large-305', 'large-306', 'large-307', 'large-308', 'large-309', 'large-310', 'large-311', 'large-312', 'large-313', 'large-314', 'large-315', 'large-316', 'large-317', 'large-318', 'large-319', 'large-320', 'large-321', 'large-322', 'large-323', 'large-324', 'large-325', 'large-326', 'large-327', 'large-328', 'large-329', 'large-330', 'large-331', 'large-332', 'large-333', 'large-334', 'large-335', 'large-336', 'large-337', 'large-338', 'large-339', 'large-340', 'large-341', 'large-342', 'large-343', 'large-344', 'large-345', 'large-346', 'large-347', 'large-348', 'large-349', 'large-350', 'large-351', 'large-352', 'large-353', 'large-354', 'large-355', 'large-356', 'large-357', 'large-358', 'large-359', 'large-360', 'large-361', 'large-362', 'large-363', 'large-364', 'large-365', 'large-366', 'large-367', 'large-368', 'large-369', 'large-370', 'large-371', 'large-372', 'large-373', 'large-374', 'large-375', 'large-376', 'large-377', 'large-378', 'large-379', 'large-380', 'large-381', 'large-382', 'large-383', 'large-384', 'large-385', 'large-386', 'large-387', 'large-388', 'large-389', 'large-390', 'large-391', 'large-392', 'large-393', 'large-394', 'large-395', 'large-396', 'large-397', 'large-398', 'large-399', 'large-400']
+"medium-35", "medium-37", "medium-38", "medium-39", "medium-40", "medium-41", "medium-42", 
+"medium-43", "medium-44", "medium-45", "medium-48", "medium-49", "medium-51", "medium-52", 
+"medium-55", "medium-56", 'medium-58', 'medium-61', 'medium-63', 'medium-64', 'medium-65', 
+'medium-66', 'medium-67', 'medium-71', 'medium-72', 'medium-75', 'medium-77', 'medium-78', 
+'medium-80', 'medium-81', 'medium-82', 'medium-83', 'medium-87', 'medium-89', 'medium-92', 
+'medium-95', 'medium-99', 'medium-100', 'medium-101', 'medium-104', 'medium-106', 'medium-113', 
+'medium-114', 'medium-115', 'medium-117', 'medium-118', 'medium-119', 'medium-120', 'medium-121', 
+'medium-124', 'medium-126', 'medium-127', 'medium-128', 'medium-129', 'medium-130', 'medium-131', 
+'medium-133', 'medium-134', 'medium-135', 'medium-136', 'medium-137', 'medium-139', 'medium-141', 
+'medium-143', 'medium-146', 'medium-147', 'medium-150', 'medium-154', 'medium-155', 'medium-156', 
+'medium-158', 'medium-160', 'medium-161', 'medium-162', 'medium-163', 'medium-166', 'medium-167', 
+'medium-168', 'medium-169', 'medium-172', 'medium-173', 'medium-174', 'medium-176', 'medium-177',
+'medium-178', 'medium-179', 'medium-181', 'medium-182', 'medium-183', 'medium-185', 'medium-186', 
+'medium-187', 'medium-188', 'medium-192', 'medium-194', 'medium-195', 'medium-196', 'medium-199', 
+'medium-200', 'medium-201', 'medium-202', 'medium-206', 'medium-207', 'medium-210', 'medium-211', 
+'medium-212', 'medium-213', 'medium-214', 'medium-215', 'medium-217', 'medium-220', 'medium-222', 
+'medium-225', 'medium-226', 'medium-230', 'medium-231', 'medium-232', 'medium-236', 'medium-237', 
+'medium-238', 'medium-239', 'medium-241', 'medium-242', 'medium-246', 'medium-247', 'medium-250', 
+'medium-251', 'medium-253', 'medium-254', 'medium-255', 'medium-256', 'medium-258', 'medium-261', 
+'medium-262', 'medium-264', 'medium-266', 'medium-267', 'medium-269', 'medium-270', 'medium-271',
+'medium-274', 'medium-275', 'medium-278', 'medium-279', 'medium-285', 'medium-286', 'medium-287', 
+'medium-288', 'medium-291', 'medium-293', 'medium-294', 'medium-295', 'medium-297', 'medium-299', 
+'medium-301', 'large-1', 'large-3', 'large-4', 'large-6', 'large-7', 'large-8', 'large-10', 
+'large-11', 'large-12', 'large-14', 'large-15', 'large-16', 'large-17', 'large-18', 'large-20', 
+'large-21', 'large-22', 'large-23', 'large-24', 'large-25', 'large-26', 'large-27', 'large-28', 
+'large-30', 'large-31', 'large-34', 'large-35', 'large-37', 'large-38', 'large-39', 'large-40',
+'large-41', 'large-42', 'large-43', 'large-44', 'large-45', 'large-47', 'large-48', 'large-49', 
+'large-51', 'large-52', 'large-53', 'large-55', 'large-56', 'large-57', 'large-58', 'large-59', 
+'large-61', 'large-63', 'large-64', 'large-66', 'large-67', 'large-70', 'large-72', 'large-73', 
+'large-75', 'large-77', 'large-78', 'large-79', 'large-80', 'large-81', 'large-82', 'large-83', 
+'large-84','large-86', 'large-87', 'large-89', 'large-91', 'large-92', 'large-93', 'large-95', 
+'large-96', 'large-97', 'large-99', 'large-100', 'large-101', 'large-103', 'large-104', 'large-105',
+'large-106', 'large-108', 'large-112', 'large-113', 'large-114', 'large-117', 'large-118', 
+'large-119', 'large-120', 'large-121', 'large-122', 'large-124', 'large-126', 'large-127', 
+'large-128', 'large-129', 'large-130', 'large-131', 'large-133', 'large-134', 'large-135', 
+'large-136', 'large-137', 'large-139', 'large-141', 'large-143', 'large-145', 'large-146', 
+'large-147', 'large-150', 'large-151', 'large-153', 'large-154', 'large-155', 'large-156', 
+'large-158', 'large-160', 'large-161', 'large-162', 'large-163', 'large-166', 'large-167',
+'large-168', 'large-169', 'large-171', 'large-172', 'large-173', 'large-174', 'large-176', 
+'large-177', 'large-178', 'large-180', 'large-181', 'large-182', 'large-183', 'large-184', 
+'large-185', 'large-186', 'large-187', 'large-188', 'large-191', 'large-192', 'large-193', 
+'large-195', 'large-196', 'large-198', 'large-199', 'large-200', 'large-201', 'large-202', 
+'large-205', 'large-206', 'large-207', 'large-209', 'large-211', 'large-212', 'large-213', 
+'large-214', 'large-215', 'large-217', 'large-218', 'large-219', 'large-220', 'large-222', 
+'large-225', 'large-226', 'large-228', 'large-230', 'large-231', 'large-232', 'large-233', 
+'large-234', 'large-237', 'large-238', 'large-239', 'large-241', 'large-242', 'large-243', 
+'large-244', 'large-246', 'large-247', 'large-250', 'large-251', 'large-252', 'large-253', 
+'large-254', 'large-255', 'large-256', 'large-258', 'large-260', 'large-261', 'large-262', 
+'large-264', 'large-265', 'large-266', 'large-267', 'large-268', 'large-269', 'large-270', 
+'large-271', 'large-272', 'large-273', 'large-274', 'large-275', 'large-278', 'large-279', 
+'large-282', 'large-283', 'large-284', 'large-285', 'large-286', 'large-287', 'large-288', 
+'large-290', 'large-291', 'large-293', 'large-294', 'large-295', 'large-297', 'large-299', 
+'large-300', 'large-301', 'large-302', 'large-304', 'large-305', 'large-306', 'large-307', 
+'large-308', 'large-309', 'large-310', 'large-311', 'large-312', 'large-313', 'large-314', 'large-315', 'large-316', 'large-317', 'large-318', 'large-319', 'large-320', 'large-321', 'large-322', 'large-323', 'large-324', 'large-325', 'large-326', 'large-327', 'large-328', 'large-329', 'large-330', 'large-331', 'large-332', 'large-333', 'large-334', 'large-335', 'large-336', 'large-337', 'large-338', 'large-339', 'large-340', 'large-341', 'large-342', 'large-343', 'large-344', 'large-345', 'large-346', 'large-347', 'large-348', 'large-349', 'large-350', 'large-351', 'large-352', 'large-353', 'large-354', 'large-355', 'large-356', 'large-357', 'large-358', 'large-359', 'large-360', 'large-361', 'large-362', 'large-363', 'large-364', 'large-365', 'large-366', 'large-367', 'large-368', 'large-369', 'large-370', 'large-371', 'large-372', 'large-373', 'large-374', 'large-375', 'large-376', 'large-377', 'large-378', 'large-379', 'large-380', 'large-381', 'large-382', 'large-383', 'large-384', 'large-385', 'large-386', 'large-387', 'large-388', 'large-389', 'large-390', 'large-391', 'large-392', 'large-393', 'large-394', 'large-395', 'large-396', 'large-397', 'large-398', 'large-399', 'large-400']
 bad_small = [file for file in improvable if "small" in file]
 bad_medium = [file for file in improvable if "medium" in file]
 bad_large = [file for file in improvable if "large" in file]
@@ -45,11 +98,11 @@ bad_large_4 = bad_large[3 * size:]
 file = ""
 START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = True
-RUN_LIST_MEDIUM = False
-RUN_LIST_LARGE_1 = False
-RUN_LIST_LARGE_2 = False
-RUN_LIST_LARGE_3 = False
-RUN_LIST_LARGE_4 = False
+RUN_LIST_MEDIUM = True
+RUN_LIST_LARGE_1 = True
+RUN_LIST_LARGE_2 = True
+RUN_LIST_LARGE_3 = True
+RUN_LIST_LARGE_4 = True
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
