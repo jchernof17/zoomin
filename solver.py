@@ -44,12 +44,12 @@ bad_large_3 = bad_large[2 * size:3 * size]
 bad_large_4 = bad_large[3 * size:]
 file = ""
 START = 1  # Set this to some number between 1 and 303
-RUN_LIST_SMALL = True
+RUN_LIST_SMALL = False
 RUN_LIST_MEDIUM = False
 RUN_LIST_LARGE_1 = False
 RUN_LIST_LARGE_2 = False
 RUN_LIST_LARGE_3 = False
-RUN_LIST_LARGE_4 = False
+RUN_LIST_LARGE_4 = True
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
@@ -81,13 +81,13 @@ def subedgelists_from_graph(G, T=None):
     # there is no way the number of edges is >= the number of vertices!
     upper_bound = min([len(G) - 1, len(lst)])
     if T:
-        lower_bound = max([lower_bound, int(len(list(T.edges)) * 1), edge_lower_bound(G)])
-        upper_bound = min([upper_bound, int(len(list(T.edges)) * 1.3), edge_upper_bound(G)])
-    lower_bound = max([0, edge_lower_bound(G)])
-    upper_bound = min([edge_upper_bound(G), 99])
+        lower_bound = max([lower_bound, int(len(list(T.edges)) * 1)])
+        upper_bound = min([upper_bound, int(len(list(T.edges)) * 1.3)])
+    #lower_bound = max([0, edge_lower_bound(G)])
+    #upper_bound = min([edge_upper_bound(G), 99])
     # print("analyzing len " + str(double_the_min_number_of_edges) + ":" + str(upper_bound))
     sublists = []
-    print("edge: \t (" + str(lower_bound) + ") \t (" + str(upper_bound) + ") \t (" + str(len(T) - 1) + ")")
+    #print("edge: \t (" + str(lower_bound) + ") \t (" + str(upper_bound) + ") \t (" + str(len(T) - 1) + ")")
     # print("currently have " + str(len(list(T.edges))) + " in best tree, so searching in [" + str(lower_bound) + ":" + str(upper_bound) + "]")
     for _ in range(MAXIMUM_SUBLISTS):
         # sublist = sorted(sample(lst, k=randint(lower_bound, upper_bound)), key=lambda e: (e[0], e[1]))
@@ -130,12 +130,12 @@ def sublists_from_graph(G, max_iters=MAXIMUM_SUBLISTS, T=""):
         lower_bound = min([len(G), len(G) // max_degree])
         upper_bound = len(G)
         if T:
-            lower_bound = max([lower_bound, (len(T) * 0.5), edge_lower_bound(G)])
-            upper_bound = min([upper_bound, (len(T) * 1.3), edge_upper_bound(G)])
+            lower_bound = max([lower_bound, (len(T) * 0.5)])
+            upper_bound = min([upper_bound, (len(T) * 1.3)])
         density = nx.density(G)
-        lower_bound = max([0, edge_lower_bound(G)])
-        upper_bound = min([edge_upper_bound(G), 99])
-        print("nodes: \t (" + str(lower_bound) + ") \t (" + str(upper_bound) + ") \t (" + str(len(T) - 1) + ")")
+        #lower_bound = max([0, edge_lower_bound(G)])
+        #upper_bound = min([edge_upper_bound(G), 99])
+        #print("nodes: \t (" + str(lower_bound) + ") \t (" + str(upper_bound) + ") \t (" + str(len(T) - 1) + ")")
         for _ in range(max_iters):
             sublist = sorted(sample(G.nodes, randint(int(lower_bound), int(upper_bound))))
             if sublist not in sublists:
