@@ -15,9 +15,9 @@ from random import sample, randint, choices
 
 # INPUT FILES
 improvable = ["small-1", "small-7", "small-15", "small-16", "small-17", 
-"small-18", "small-27", "small-41", "small-43", "small-45", "small-55",
-"small-66", "small-71", "small-72", "small-75", "small-78", 
-"small-89", "small-95", "small-99", "small-117", "small-121",
+"small-18", "small-27", "small-43", "small-45",
+"small-66", "small-71", "small-72", "small-78", 
+"small-89", "small-99", "small-117", "small-121",
 "small-126", "small-129", "small-131", "small-133", "small-136", "small-144",
 "small-161", "small-166", "small-177", "small-178", 
 "small-194", "small-205", "small-206", "small-213", "small-217", 
@@ -103,16 +103,16 @@ RUN_LIST_LARGE_4 = False
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
-BRUTE_FORCE = True
+BRUTE_FORCE = False
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 65536
+MAXIMUM_SUBLISTS = 16384
 MAX_SECONDROUND_SUBLISTS = 1024
-BRUTE_EDGES = True
-EDGE_TINKERING = True
+BRUTE_EDGES = False
+EDGE_TINKERING = False
 KRUSKAL_STARTER = True
 TRY_SMALL_NUM_EDGES = False
-LARGE_SHORTEST_PATH = False
+LARGE_SHORTEST_PATH = True
 DISPLAY_HUD = False
 
 # DEBUGGING
