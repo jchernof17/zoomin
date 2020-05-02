@@ -44,12 +44,12 @@ bad_large_3 = bad_large[2 * size:3 * size]
 bad_large_4 = bad_large[3 * size:]
 file = ""
 START = 1  # Set this to some number between 1 and 303
-RUN_LIST_SMALL = False
+RUN_LIST_SMALL = True
 RUN_LIST_MEDIUM = False
 RUN_LIST_LARGE_1 = False
 RUN_LIST_LARGE_2 = False
 RUN_LIST_LARGE_3 = False
-RUN_LIST_LARGE_4 = True
+RUN_LIST_LARGE_4 = False
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
