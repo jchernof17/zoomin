@@ -1,7 +1,23 @@
 import networkx as nx
 from collections import defaultdict
+from math import exp
 
-
+def edge_upper_bound(G):
+    density = nx.density(G)
+    LAMBDA = 111
+    EXP = -0.055
+    OFFSET = 4
+    result = LAMBDA * exp(EXP * 100 * density) + OFFSET
+    upper_bound = result * len(G) * 0.01
+    return int(upper_bound)
+def edge_lower_bound(G):
+    density = nx.density(G)
+    LAMBDA = 41
+    EXP = -0.035
+    OFFSET = -1
+    result = LAMBDA * exp(EXP * 100 * density) + OFFSET
+    lower_bound = result * len(G) * 0.01
+    return int(lower_bound)
 def is_valid_network(G, T):
     """
     Checks whether T is a valid network of G.

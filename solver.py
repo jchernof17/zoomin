@@ -3,7 +3,7 @@ from networkx.algorithms.approximation import steiner_tree, min_edge_dominating_
 # from networkx.algorithms.shortest_paths.weighted import single_source_dijkstra_path
 from networkx.algorithms.mis import maximal_independent_set
 from parse import read_input_file, write_output_file, read_output_file
-from utils import average_pairwise_distance_fast
+from utils import average_pairwise_distance_fast, edge_lower_bound, edge_upper_bound
 from joblib import Parallel, delayed
 import multiprocessing
 #inferior_outputs = ""
@@ -35,15 +35,21 @@ improvable = ["small-1", "small-7", "small-11", "small-15", "small-16", "small-1
 bad_small = [file for file in improvable if "small" in file]
 bad_medium = [file for file in improvable if "medium" in file]
 bad_large = [file for file in improvable if "large" in file]
-size = len(bad_large) // 2
+
+# Split up the large file list into four subsections for easier parallelizing
+size = len(bad_large) // 4
 bad_large_1 = bad_large[:size]
-bad_large_2 = bad_large[size:]
+bad_large_2 = bad_large[size:2 * size]
+bad_large_3 = bad_large[2 * size:3 * size]
+bad_large_4 = bad_large[3 * size:]
 file = ""
 START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = True
 RUN_LIST_MEDIUM = False
 RUN_LIST_LARGE_1 = False
 RUN_LIST_LARGE_2 = False
+RUN_LIST_LARGE_3 = True
+RUN_LIST_LARGE_4 = False
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
@@ -53,12 +59,13 @@ DOMINATING_SET = False
 MAXIMUM_SUBLISTS = 16384
 MAX_SECONDROUND_SUBLISTS = 1024
 BRUTE_EDGES = True
-EDGE_TINKERING = True
+EDGE_TINKERING = False
 KRUSKAL_STARTER = False
 TRY_SMALL_NUM_EDGES = False
+DISPLAY_HUD = False
 
 # DEBUGGING
-TIME_EACH_OUTPUT = True
+TIME_EACH_OUTPUT = False
 SHOW_UPDATE_RESULT = True
 
 
@@ -66,6 +73,7 @@ def subedgelists_from_graph(G, T=None):
     # lst = sorted(list(G.edges), key=lambda e: e[0])
     lst = sorted(G.edges(data=True), key=lambda t: t[2].get('weight', 1))
     weights = [1 / x[2].get('weight') for x in lst]
+    density = nx.density(G)
     # the maximum degree of any node in the graph G
     max_degree = max([out[1] for out in nx.degree(G)])
     # there is no way the number of edges is less than the power max_degree has to be raised to in order to reach the number of vertices!
@@ -73,10 +81,13 @@ def subedgelists_from_graph(G, T=None):
     # there is no way the number of edges is >= the number of vertices!
     upper_bound = min([len(G) - 1, len(lst)])
     if T:
-        lower_bound = max([lower_bound, int(len(list(T.edges)) * 1)])
-        upper_bound = min([upper_bound, int(len(list(T.edges)) * 1.3)])
+        lower_bound = max([lower_bound, int(len(list(T.edges)) * 1), edge_lower_bound(G)])
+        upper_bound = min([upper_bound, int(len(list(T.edges)) * 1.3), edge_upper_bound(G)])
+    lower_bound = max([0, edge_lower_bound(G)])
+    upper_bound = min([edge_upper_bound(G), 99])
     # print("analyzing len " + str(double_the_min_number_of_edges) + ":" + str(upper_bound))
     sublists = []
+    print("edge: \t (" + str(lower_bound) + ") \t (" + str(upper_bound) + ") \t (" + str(len(T) - 1) + ")")
     # print("currently have " + str(len(list(T.edges))) + " in best tree, so searching in [" + str(lower_bound) + ":" + str(upper_bound) + "]")
     for _ in range(MAXIMUM_SUBLISTS):
         # sublist = sorted(sample(lst, k=randint(lower_bound, upper_bound)), key=lambda e: (e[0], e[1]))
@@ -84,7 +95,7 @@ def subedgelists_from_graph(G, T=None):
         vertex_set = {}
         max_tries = 0
         # max_list_size = randint(lower_bound, upper_bound)
-        while max_tries < 2500 and not nx.is_dominating_set(G, vertex_set):
+        while max_tries < 2500 and not nx.is_dominating_set(G, vertex_set) and len(vertex_set) < upper_bound:
             edge = choices(lst, weights=weights)[0]
             max_tries += 1
             if not (edge[0] in vertex_set) or not (edge[1] in vertex_set):
@@ -116,17 +127,32 @@ def sublists_from_graph(G, max_iters=MAXIMUM_SUBLISTS, T=""):
                 except:
                     pass
     else:
+        lower_bound = min([len(G), len(G) // max_degree])
+        upper_bound = len(G)
+        if T:
+            lower_bound = max([lower_bound, (len(T) * 0.5), edge_lower_bound(G)])
+            upper_bound = min([upper_bound, (len(T) * 1.3), edge_upper_bound(G)])
+        density = nx.density(G)
+        lower_bound = max([0, edge_lower_bound(G)])
+        upper_bound = min([edge_upper_bound(G), 99])
+        print("nodes: \t (" + str(lower_bound) + ") \t (" + str(upper_bound) + ") \t (" + str(len(T) - 1) + ")")
         for _ in range(max_iters):
-            lower_bound = min([len(G), len(G) // max_degree])
-            upper_bound = len(G)
-            if T:
-                lower_bound = max([lower_bound, (len(T) * 0.5)])
-                upper_bound = min([upper_bound, (len(T) * 1.3)])
-            sublist = sorted(sample(G.nodes, randint(lower_bound, upper_bound)))
+            sublist = sorted(sample(G.nodes, randint(int(lower_bound), int(upper_bound))))
             if sublist not in sublists:
                 sublists.append(sublist)
     return sublists
 
+def display_stats(G, T, filename=""):
+    number_of_nodes = G.number_of_nodes()
+    number_of_edges = len(list(G.edges))
+    nodes_in_tree = T.number_of_nodes()
+    edges_in_tree = len(list(T.edges))
+    density = round(100 * nx.density(G), 2)
+    node_ratio = round(100 * nodes_in_tree / number_of_nodes, 2)
+    edge_ratio = round(100 * edges_in_tree / number_of_edges, 2)
+    # print("(" + filename + ") \t (density) = (" + str(density) + ") \t (vr, er) = (" + str(node_ratio) + "," + str(edge_ratio) + ")")
+    # print("("+filename+") \t (density) = (" + str(number_of_nodes)+","+str(number_of_edges)+") \t (vr, er) = (" + node_ratio + "," + edge_ratio + ")")
+    return density, node_ratio, edge_ratio, number_of_nodes
 
 def solve(G, T, filename=""):
     """
@@ -146,9 +172,26 @@ def solve(G, T, filename=""):
     best_T, best_score = T, existing_best_score
     edges_of_G = list(G.edges)
 
-    if len(G) and len(edges_of_G) < 2500 and TRY_SMALL_NUM_EDGES:
+    if len(G) and TRY_SMALL_NUM_EDGES:
         # print("(" + filename + ") - attempting small edges selection")
         small_lsts = []
+        max_degree_vertex = max([out[0] for out in nx.degree(G)], key=lambda v: G.degree[v])
+        edges_of_max_vertex = list(G.edges([max_degree_vertex]))
+        neighbors_of_max_vertex = sorted(list(G.neighbors(max_degree_vertex)), key=lambda v: G.degree[v])
+        for neighbor in neighbors_of_max_vertex:
+            if neighbor != max_degree_vertex and nx.is_dominating_set(G, [neighbor, max_degree_vertex]):
+                # create that edge
+                edge = (max_degree_vertex, neighbor)
+                TEST_T = G.edge_subgraph([edge]).copy()
+                new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                if new_score < best_score:
+                    best_T = TEST_T
+                    best_score = new_score
+                    # If we get a record, we continue trying to improve
+                    if SHOW_UPDATE_RESULT:
+                        print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (small num edges)")
+
+
 
     # Kruskal-like method (doesn't work yet)
     if len(G) > 10 and len(T) > 4 and KRUSKAL_STARTER:
@@ -225,7 +268,7 @@ def solve(G, T, filename=""):
     # Random guessing/brute force
     if len(G) and BRUTE_FORCE:
         # create sublists
-        sublists = sublists_from_graph(G)
+        sublists = sublists_from_graph(G, T=best_T)
         # Print for debug only
         # print("checking on " + str(len(sublists)) + " sublists")
         i = 0
@@ -245,7 +288,7 @@ def solve(G, T, filename=""):
                     best_T = TEST_T
                     best_score = new_score
                     # If we get a record, we continue trying to improve
-                    sublists.extend(sublists_from_graph(G, max_iters=MAX_SECONDROUND_SUBLISTS))
+                    sublists.extend(sublists_from_graph(G, max_iters=MAX_SECONDROUND_SUBLISTS, T=best_T))
             i += 1
 
     # max spanning tree
@@ -268,6 +311,8 @@ def solve(G, T, filename=""):
                 best_T = TEST_T
                 best_score = new_score
 
+    if not nx.is_dominating_set(G, best_T) or not nx.is_tree(best_T):  # uh oh
+        best_T = nx.minimum_spanning_tree(G)
     if best_score < existing_best_score and SHOW_UPDATE_RESULT:
         print("|yes ___ (" + filename + ") " + str(round(-100 * (best_score - existing_best_score) / existing_best_score, 2)) + "% ----- new score " + str(round(best_score, 4)))
 
@@ -280,6 +325,17 @@ def solve(G, T, filename=""):
         print("time: " + str(round(time_seconds, 2)) + "s")
     return best_T
 
+def stats_summarizer():
+    results = []
+    if DISPLAY_HUD:
+        for filename in bad_small:
+            G = read_input_file("inputs/"+ filename +".in")
+            T = read_output_file("outputs/"+filename+".out", G)
+            res = display_stats(G, T, filename)
+            results.append(res)
+    results = sorted(results, key=lambda r: r[0])  # sort by densities
+    for result in results:
+        print(str(result[0]) + "\t" + str(result[1]))
 
 def run_solver():
     """
@@ -324,6 +380,10 @@ def run_solver():
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_1)
         if RUN_LIST_LARGE_2:
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_2)
+        if RUN_LIST_LARGE_3:
+            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_3)
+        if RUN_LIST_LARGE_4:
+            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_4)
 
     elif not file and not ONLY_RUN_IMPROVABLE:
         for i in range(len(sizes)):
@@ -339,7 +399,7 @@ def run_solver():
                 # outputs.append((solve(G, EXISTING_T), filepath))
                 write_output_file(solve(G, EXISTING_T), "outputs/"+filepath+".out")
             '''
-    else:  # file-specific running
+    elif file:  # file-specific running
         filepath = file
         G = read_input_file("inputs/"+filepath+".in")
         EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
@@ -353,8 +413,10 @@ def run_solver():
 
 
 if __name__ == '__main__':
-    run_solver()
-
+    if DISPLAY_HUD:
+        stats_summarizer()
+    else:
+        run_solver()
 # Here's an example of how to run your solver.
 
 # Usage: python3 solver.py test.in
