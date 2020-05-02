@@ -20,7 +20,7 @@ improvable = ["small-1", "small-7", "small-15", "small-16", "small-17",
 "small-83", "small-89", "small-95", "small-99", "small-117", "small-121",
 "small-126", "small-129", "small-131", "small-133", "small-136", "small-144",
 "small-161", "small-166", "small-177", "small-178", 
-"small-194", "small-198", "small-199", "small-205", "small-206", "small-213", "small-217", 
+"small-194", "small-199", "small-205", "small-206", "small-213", "small-217", 
 "small-227", "small-228", "small-231", "small-234", 
 "small-237", "small-239", "small-242", "small-253", "small-258", "small-260", 
 "small-269", "small-274", "small-278",
@@ -277,12 +277,13 @@ def solve(G, T, filename=""):
                     if SHOW_UPDATE_RESULT:
                         print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (Kruskal)")
             i = i + 1
+            
     # Replace Large Edges
     if len(G) and LARGE_SHORTEST_PATH:
         # Replace the largest edges in the tree with a shorter path between the nodes
         edges = sorted(best_T.edges(data=True), key=lambda t: t[2].get('weight', 1), reverse=True)
-        improve = True
-        while improve and edges:
+        iterations = len(edges)
+        for i in range(iterations):
             largest_edge = edges[0]
             curr_edges = edges[1:]
             source, target = largest_edge[0], largest_edge[1]
