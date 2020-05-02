@@ -46,26 +46,26 @@ file = ""
 START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = False
 RUN_LIST_MEDIUM = False
-RUN_LIST_LARGE_1 = False
-RUN_LIST_LARGE_2 = False
-RUN_LIST_LARGE_3 = False
+RUN_LIST_LARGE_1 = True
+RUN_LIST_LARGE_2 = True
+RUN_LIST_LARGE_3 = True
 RUN_LIST_LARGE_4 = True
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
-BRUTE_FORCE = True
+BRUTE_FORCE = False
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 16384
-MAX_SECONDROUND_SUBLISTS = 1024
-BRUTE_EDGES = True
+MAXIMUM_SUBLISTS = 300
+MAX_SECONDROUND_SUBLISTS = 100
+BRUTE_EDGES = False
 EDGE_TINKERING = False
-KRUSKAL_STARTER = False
+KRUSKAL_STARTER = True
 TRY_SMALL_NUM_EDGES = False
 DISPLAY_HUD = False
 
 # DEBUGGING
-TIME_EACH_OUTPUT = False
+TIME_EACH_OUTPUT = True
 SHOW_UPDATE_RESULT = True
 
 
@@ -73,6 +73,7 @@ def subedgelists_from_graph(G, T=None):
     # lst = sorted(list(G.edges), key=lambda e: e[0])
     lst = sorted(G.edges(data=True), key=lambda t: t[2].get('weight', 1))
     weights = [1 / x[2].get('weight') for x in lst]
+    #print(str(weights[0]) + "\t" + str(weights[len(lst) - 1]))
     density = nx.density(G)
     # the maximum degree of any node in the graph G
     max_degree = max([out[1] for out in nx.degree(G)])
@@ -81,15 +82,19 @@ def subedgelists_from_graph(G, T=None):
     # there is no way the number of edges is >= the number of vertices!
     upper_bound = min([len(G) - 1, len(lst)])
     if T:
-        lower_bound = max([lower_bound, int(len(list(T.edges)) * 1)])
-        upper_bound = min([upper_bound, int(len(list(T.edges)) * 1.3)])
+        if len(T) < 15:  # dense graph
+            lower_bound = max([lower_bound, int(len(list(T.edges)) - 6)])
+            upper_bound = min([upper_bound, int(len(list(T.edges)) + 6)])
+        else:
+            lower_bound = max([lower_bound, int(len(list(T.edges)) * 0.7)])
+            upper_bound = min([upper_bound, int(len(list(T.edges)) * 1.3)])
     #lower_bound = max([0, edge_lower_bound(G)])
     #upper_bound = min([edge_upper_bound(G), 99])
     # print("analyzing len " + str(double_the_min_number_of_edges) + ":" + str(upper_bound))
     sublists = []
     #print("edge: \t (" + str(lower_bound) + ") \t (" + str(upper_bound) + ") \t (" + str(len(T) - 1) + ")")
     # print("currently have " + str(len(list(T.edges))) + " in best tree, so searching in [" + str(lower_bound) + ":" + str(upper_bound) + "]")
-    for _ in range(MAXIMUM_SUBLISTS):
+    for _ in range(MAXIMUM_SUBLISTS * 30):
         # sublist = sorted(sample(lst, k=randint(lower_bound, upper_bound)), key=lambda e: (e[0], e[1]))
         sublist = []
         vertex_set = {}
@@ -114,6 +119,8 @@ def sublists_from_graph(G, max_iters=MAXIMUM_SUBLISTS, T=""):
     lst = list(G.nodes)
     sublists = []
     max_degree = max([out[1] for out in nx.degree(G)])
+    nodes_in_degree_order = sorted(list(G.nodes), key=lambda v: G.degree[v])
+    weights = [G.degree[v] for v in nodes_in_degree_order]
     if len(lst) > 50 and False:
         for node in lst:
             for _ in range(max_iters // len(lst)):
@@ -137,7 +144,8 @@ def sublists_from_graph(G, max_iters=MAXIMUM_SUBLISTS, T=""):
         #upper_bound = min([edge_upper_bound(G), 99])
         #print("nodes: \t (" + str(lower_bound) + ") \t (" + str(upper_bound) + ") \t (" + str(len(T) - 1) + ")")
         for _ in range(max_iters):
-            sublist = sorted(sample(G.nodes, randint(int(lower_bound), int(upper_bound))))
+            num_nodes = randint(int(lower_bound), int(upper_bound))
+            sublist = sorted(choices(nodes_in_degree_order, weights=weights, k=num_nodes))
             if sublist not in sublists:
                 sublists.append(sublist)
     return sublists
@@ -194,24 +202,24 @@ def solve(G, T, filename=""):
 
 
     # Kruskal-like method (doesn't work yet)
-    if len(G) > 10 and len(T) > 4 and KRUSKAL_STARTER:
-        # Strategy: start with the best edges, connect the rest of the tree, and see what we've got
+    if len(G) > 10 and KRUSKAL_STARTER:
+        # Strategy: add the smallest edge that adds 1 node to the tree
         edges = sorted(G.edges(data=True), key=lambda t: t[2].get('weight', 1))
         # print(edges)
-        edge = edges.pop()
-        edge = edges.pop()
-        TEST_G = G.edge_subgraph([edge[:2]]).copy()
-        while len(TEST_G) < len(T) // 2:
-            TEST_G.add_edges_from([edges.pop()])
-        TEST_T = steiner_tree(G, TEST_G.nodes)
-        if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
-            new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
-            if new_score < best_score:
-                best_T = TEST_T
-                best_score = new_score
-                # If we get a record, we continue trying to improve
-                if SHOW_UPDATE_RESULT:
-                    print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (Kruskal)")
+        nodes = T.nodes
+        one_in_tree = [(e[0], e[1]) for e in edges if (e[0] in nodes) ^ (e[1] in nodes)]
+        for edge in one_in_tree:
+            T_edges = list(T.edges)
+            T_edges.append(edge)
+            TEST_T = G.edge_subgraph(T_edges).copy()
+            if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                if new_score < best_score:
+                    best_T = TEST_T
+                    best_score = new_score
+                    # If we get a record, we continue trying to improve
+                    if SHOW_UPDATE_RESULT:
+                        print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (Kruskal)")
     # Edge Tinkering method
     if len(G) and EDGE_TINKERING:
         candidate_nodes = [node for node in G.nodes if node not in T.nodes]
