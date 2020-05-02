@@ -97,11 +97,12 @@ file = ""
 START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = True
 RUN_LIST_MEDIUM = True
-RUN_LIST_LARGE_1 = True
-RUN_LIST_LARGE_2 = True
-RUN_LIST_LARGE_3 = True
-RUN_LIST_LARGE_4 = True
-ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
+RUN_LIST_LARGE = True
+RUN_LIST_LARGE_1 = False
+RUN_LIST_LARGE_2 = False
+RUN_LIST_LARGE_3 = False
+RUN_LIST_LARGE_4 = False
+ONLY_RUN_IMPROVABLE = False  # don't you dare set this to false...
 
 # STRATEGIES
 BRUTE_FORCE = False
@@ -290,6 +291,36 @@ def solve(G, T, filename=""):
                         print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (Kruskal)")
             i = i + 1
 
+    # tree cut method
+    if len(G) and len(best_T) > 4 and TRY_REMOVING_LARGEST_EDGE:
+        # print("(" + filename + ") - attempting small edges selection")
+        tree_edges = sorted(best_T.edges(data=True), key=lambda t: t[2].get('weight', 1))
+        graph_edges = sorted(G.edges(data=True),key=lambda t: t[2].get('weight', 1))
+        # max_tree_edges = [tree_edges[(len(tree_edges)-1)][:2], tree_edges[(len(tree_edges)-2)][:2], tree_edges[(len(tree_edges)-3)][:2]]  # remove (u,v) tuple of max tree edge
+        max_tree_edges = [edge[:2] for edge in tree_edges]
+        tree_edges_no_weight = [(edge[0],edge[1]) for edge in tree_edges]
+        CUT_T = G.edge_subgraph(tree_edges_no_weight).copy()
+        for max_tree_edge in max_tree_edges:
+            CUT_T.remove_edge(max_tree_edge[0], max_tree_edge[1])
+            cut_t_edges = list(CUT_T.edges)
+            component_1 = list(node_connected_component(CUT_T, max_tree_edge[0]))
+            component_2 = list(node_connected_component(CUT_T, max_tree_edge[1]))
+            crossing_edges = [edge[:2] for edge in graph_edges if (edge[0] in component_1 and edge[1] in component_2) or (edge[1] in component_1 and edge[0] in component_2)] 
+            for crossing_edge in crossing_edges:
+                # print(crossing_edge)
+                test_t_edges = cut_t_edges.copy()
+                test_t_edges.append(crossing_edge)
+                TEST_T = G.edge_subgraph(test_t_edges).copy()
+                if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                    new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                    if new_score < best_score:
+                        best_T = TEST_T
+                        best_score = new_score
+                        # If we get a record, we continue trying to improve
+                        if SHOW_UPDATE_RESULT:
+                            #print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (tree cut)")
+                            pass
+
     # Replace Large Edges
     if len(G) and LARGE_SHORTEST_PATH:
         # Replace the largest edges in the tree with a shorter path between the nodes
@@ -455,9 +486,9 @@ def run_solver():
     if RUN_LIST_MEDIUM:
         sizes.append("medium")
         num_graphs.append(304)
-    # if RUN_LIST_LARGE:
-    #     sizes.append("large")
-    #     num_graphs.append(401)
+    if RUN_LIST_LARGE:
+        sizes.append("large")
+        num_graphs.append(401)
     # loop through all inputs and create outputs
     num_cores = multiprocessing.cpu_count()
     outputs = []
@@ -468,10 +499,11 @@ def run_solver():
         else:
             filepath = size + "-" + str(index)
         G = read_input_file("inputs/"+ filepath +".in")
-        # print("analyzing "+filepath)
+        print("analyzing "+filepath)
         EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
         # outputs.append((solve(G, EXISTING_T), filepath))
-        write_output_file(solve(G, EXISTING_T, filename=filepath), "outputs/"+filepath+".out")
+        um = solve(G, EXISTING_T, filename=filepath)
+        # write_output_file(solve(G, EXISTING_T, filename=filepath), "outputs/"+filepath+".out")
 
     if not file and ONLY_RUN_IMPROVABLE:
         if RUN_LIST_SMALL:
@@ -491,7 +523,10 @@ def run_solver():
         for i in range(len(sizes)):
             size = sizes[i]
             GRAPH_RANGE = range(START, num_graphs[i])
-            Parallel(n_jobs=num_cores)(delayed(solver)(size, j) for j in GRAPH_RANGE)
+            #Parallel(n_jobs=num_cores)(delayed(solver)(size, j) for j in GRAPH_RANGE)
+            for j in GRAPH_RANGE:
+                if j != 58:
+                    solver(size, j)
     elif file:  # file-specific running
         filepath = file
         G = read_input_file("inputs/"+filepath+".in")
