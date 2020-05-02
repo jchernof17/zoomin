@@ -206,10 +206,12 @@ def solve(G, T, filename=""):
         # Strategy: add the smallest edge that adds 1 node to the tree
         edges = sorted(G.edges(data=True), key=lambda t: t[2].get('weight', 1))
         # print(edges)
-        nodes = T.nodes
+        nodes = best_T.nodes
         one_in_tree = [(e[0], e[1]) for e in edges if (e[0] in nodes) ^ (e[1] in nodes)]
-        for edge in one_in_tree:
-            T_edges = list(T.edges)
+        i = 0
+        while i < len(one_in_tree):
+            edge = one_in_tree[i]
+            T_edges = list(best_T.edges)
             T_edges.append(edge)
             TEST_T = G.edge_subgraph(T_edges).copy()
             if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
@@ -217,9 +219,13 @@ def solve(G, T, filename=""):
                 if new_score < best_score:
                     best_T = TEST_T
                     best_score = new_score
+                    nodes = best_T.nodes
+                    one_in_tree = [(e[0], e[1]) for e in edges if (e[0] in nodes) ^ (e[1] in nodes)]
+                    i = 0
                     # If we get a record, we continue trying to improve
                     if SHOW_UPDATE_RESULT:
                         print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (Kruskal)")
+            i = i + 1
     # Edge Tinkering method
     if len(G) and EDGE_TINKERING:
         candidate_nodes = [node for node in G.nodes if node not in T.nodes]
