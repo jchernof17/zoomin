@@ -81,10 +81,10 @@ START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = True
 RUN_LIST_MEDIUM = True
 RUN_LIST_LARGE = True
-RUN_LIST_LARGE_1 = True
-RUN_LIST_LARGE_2 = True
-RUN_LIST_LARGE_3 = True
-RUN_LIST_LARGE_4 = True
+RUN_LIST_LARGE_1 = False
+RUN_LIST_LARGE_2 = False
+RUN_LIST_LARGE_3 = False
+RUN_LIST_LARGE_4 = False
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
@@ -95,7 +95,7 @@ MAXIMUM_SUBLISTS = 16384
 MAX_SECONDROUND_SUBLISTS = 1024
 BRUTE_EDGES = False
 EDGE_TINKERING = False
-KRUSKAL_STARTER = False
+KRUSKAL_STARTER = True
 TRY_REMOVING_LARGEST_EDGE = True  # also known as tree cut
 TRY_SMALL_NUM_EDGES = True
 LARGE_SHORTEST_PATH = True
@@ -332,7 +332,7 @@ def solve(G, T, filename=""):
         edges = sorted(best_T.edges(data=True), key=lambda t: t[2].get('weight', 1), reverse=True)
         iterations = len(edges)
         for i in range(iterations):
-            largest_edge = edges[randint(0, len(edges)-1)]
+            largest_edge = edges[randint(0, int(len(edges)/2))]
             largest_edge = (largest_edge[0], largest_edge[1])
             T_edges = list(best_T.edges)
             T_edges.remove(largest_edge)
