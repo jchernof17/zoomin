@@ -98,10 +98,10 @@ START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = True
 RUN_LIST_MEDIUM = True
 RUN_LIST_LARGE = True
-RUN_LIST_LARGE_1 = False
-RUN_LIST_LARGE_2 = False
-RUN_LIST_LARGE_3 = False
-RUN_LIST_LARGE_4 = False
+RUN_LIST_LARGE_1 = True
+RUN_LIST_LARGE_2 = True
+RUN_LIST_LARGE_3 = True
+RUN_LIST_LARGE_4 = True
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
@@ -112,10 +112,11 @@ MAXIMUM_SUBLISTS = 16384
 MAX_SECONDROUND_SUBLISTS = 1024
 BRUTE_EDGES = False
 EDGE_TINKERING = False
-KRUSKAL_STARTER = True
+KRUSKAL_STARTER = False
 TRY_REMOVING_LARGEST_EDGE = True  # also known as tree cut
 TRY_SMALL_NUM_EDGES = True
 LARGE_SHORTEST_PATH = True
+REMOVE_DEGREE_TWO_NODES = True
 DISPLAY_HUD = False
 
 # DEBUGGING
@@ -234,9 +235,43 @@ def solve(G, T, filename=""):
     best_T, best_score = T, existing_best_score
     edges_of_G = list(G.edges)
 
-
+    # remove degree 2 node method
+    if len(G) and len(best_T) > 2 and REMOVE_DEGREE_TWO_NODES:
+        nodes_of_degree_two = [node[0] for node in best_T.degree if node[1] == 2]
+        best_T_nodes = list(best_T.nodes)
+        graph_edges = sorted(G.edges(data=True),key=lambda t: t[2].get('weight', 1)) 
+        for node in nodes_of_degree_two:
+            neighbors = list(best_T.edges(node))
+            adjacents = list(best_T.adj[node])
+            if len(adjacents) == 2:
+                # print(neighbors)
+                TEST_G = best_T.copy()
+                TEST_G.remove_edges_from(neighbors)
+                final_edges = list(TEST_G.edges)
+                component_1 = list(node_connected_component(TEST_G, adjacents[0]))
+                component_2 = list(node_connected_component(TEST_G, adjacents[1]))
+                CUT_T = G.edge_subgraph(final_edges).copy()
+                if nx.is_dominating_set(G, CUT_T.nodes):
+                    # print("we have a dominating set")
+                    # find an edge connecting component 1 to component 2
+                    # print(component_1, component_2)
+                    crossing_edges = [edge[:2] for edge in graph_edges if (edge[0] in component_1 and edge[1] in component_2) or (edge[1] in component_1 and edge[0] in component_2)] 
+                    # print(crossing_edges)
+                    for edge in crossing_edges:
+                        new_tree_edges = final_edges.copy()
+                        new_tree_edges.append(edge)
+                        TEST_T = G.edge_subgraph(new_tree_edges).copy()
+                        if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                            new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                            if new_score < best_score:
+                                best_T = TEST_T
+                                best_score = new_score
+                                if SHOW_UPDATE_RESULT:
+                                    # print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (remove one leaf strat)")
+                                    pass
+                    
     # Remove Edge Method
-    if len(G) and len(best_T) > 4 and TRY_SMALL_NUM_EDGES:
+    if len(G) and len(best_T) > 2 and TRY_SMALL_NUM_EDGES:
         nodes_of_degree_one = [node[0] for node in best_T.degree if node[1] == 1]
         best_T_nodes = list(best_T.nodes)
         for node in nodes_of_degree_one:
@@ -252,7 +287,7 @@ def solve(G, T, filename=""):
                         pass
 
     # Tree Cut Method
-    if len(G) and len(best_T) > 4 and TRY_REMOVING_LARGEST_EDGE:
+    if len(G) and len(best_T) > 2 and TRY_REMOVING_LARGEST_EDGE:
         # print("(" + filename + ") - attempting small edges selection")
         tree_edges = sorted(best_T.edges(data=True), key=lambda t: t[2].get('weight', 1))
         graph_edges = sorted(G.edges(data=True),key=lambda t: t[2].get('weight', 1))
