@@ -64,7 +64,7 @@ improvable = ['small-15', 'small-16', 'small-17', 'small-18', 'small-43', 'small
 'large-363', 'large-364', 'large-365', 'large-366', 'large-367', 'large-368', 'large-369', 'large-370', 'large-371', 'large-372', 
 'large-373', 'large-374', 'large-375', 'large-376', 'large-377', 'large-378', 'large-379', 'large-380', 'large-381', 'large-382', 
 'large-383', 'large-384', 'large-385', 'large-386', 'large-387', 'large-388', 'large-389', 'large-390', 'large-391', 'large-392', 
-'large-393', 'large-394', 'large-395', 'large-396', 'large-397', 'large-398', 'large-399', 'large-400']
+'large-393', 'large-394', 'large-395', 'large-396', 'large-397', 'large-398', 'large-399', 'large-400'] 
 
 bad_small = [file for file in improvable if "small" in file]
 bad_medium = [file for file in improvable if "medium" in file]
