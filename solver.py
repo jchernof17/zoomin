@@ -3,6 +3,7 @@ from networkx.algorithms.approximation import steiner_tree, min_edge_dominating_
 from networkx.algorithms.shortest_paths.weighted import dijkstra_path
 from networkx.algorithms.mis import maximal_independent_set
 from networkx.algorithms.components import node_connected_component
+from networkx.algorithms.cycles import find_cycle
 from parse import read_input_file, write_output_file, read_output_file
 from utils import average_pairwise_distance_fast, edge_lower_bound, edge_upper_bound
 from joblib import Parallel, delayed
@@ -76,11 +77,11 @@ bad_large_1 = bad_large[:size]
 bad_large_2 = bad_large[size:2 * size]
 bad_large_3 = bad_large[2 * size:3 * size]
 bad_large_4 = bad_large[3 * size:]
-file = "large-328"
+file = ""
 START = 1  # Set this to some number between 1 and 303
-RUN_LIST_SMALL = False
-RUN_LIST_MEDIUM = False
-RUN_LIST_LARGE = False
+RUN_LIST_SMALL = True
+RUN_LIST_MEDIUM = True
+RUN_LIST_LARGE = True
 RUN_LIST_LARGE_1 = False
 RUN_LIST_LARGE_2 = False
 RUN_LIST_LARGE_3 = False
@@ -93,14 +94,15 @@ MAX_SPANNING_TREE = False
 DOMINATING_SET = False
 MAXIMUM_SUBLISTS = 5000
 MAX_SECONDROUND_SUBLISTS = 10
-BRUTE_EDGES = True
-EDGE_TINKERING = True
+BRUTE_EDGES = False
+EDGE_TINKERING = False
 KRUSKAL_STARTER = True
 TRY_REMOVING_LARGEST_EDGE = True  # also known as tree cut
 TRY_SMALL_NUM_EDGES = True
 LARGE_SHORTEST_PATH = True
 REMOVE_DEGREE_TWO_NODES = True
 REMOVE_DEGREE_THREE_NODES = True
+ADD_NODES = True
 DISPLAY_HUD = False
 
 # DEBUGGING
@@ -221,6 +223,27 @@ def solve(G, T, filename=""):
         return T
     best_T, best_score = T, existing_best_score
     edges_of_G = list(G.edges)
+
+    # add nodes
+    if len(G) and ADD_NODES:
+        nodes = [node for node in G.nodes if node not in best_T.nodes]
+        for node in nodes:
+            edges = list(G.edges(node))
+            new_edges = list(best_T.edges)
+            new_edges.extend(edges)
+            TEST_G = G.edge_subgraph(new_edges).copy()
+            while not nx.is_tree(TEST_G):
+                cycle = nx.find_cycle(TEST_G, orientation='ignore')
+                edge_to_remove = cycle[randint(0, len(cycle)-1)]
+                TEST_G.remove_edge(edge_to_remove[0], edge_to_remove[1])
+            if len(TEST_G) and nx.is_tree(TEST_G) and nx.is_dominating_set(G, TEST_G.nodes):
+                new_score = 0 if not TEST_G.edges else average_pairwise_distance_fast(TEST_G)
+                if new_score < best_score:
+                    best_T = TEST_G
+                    best_score = new_score
+                    if SHOW_UPDATE_RESULT:
+                        print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (add nodes)")
+                        pass
 
     # remove degree 2 node method
     if len(G) and len(best_T) > 2 and REMOVE_DEGREE_TWO_NODES:
