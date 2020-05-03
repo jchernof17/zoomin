@@ -314,7 +314,7 @@ def solve(G, T, filename=""):
         edges = sorted(best_T.edges(data=True), key=lambda t: t[2].get('weight', 1), reverse=True)
         iterations = len(edges)
         for i in range(iterations):
-            largest_edge = edges[randint(0, min(10, len(edges)-1))]
+            largest_edge = edges[randint(0, len(edges)-1)]
             largest_edge = (largest_edge[0], largest_edge[1])
             T_edges = list(best_T.edges)
             T_edges.remove(largest_edge)
