@@ -96,8 +96,8 @@ bad_large_4 = bad_large[3 * size:]
 file = ""
 START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = True
-RUN_LIST_MEDIUM = False
-RUN_LIST_LARGE = False
+RUN_LIST_MEDIUM = True
+RUN_LIST_LARGE = True
 RUN_LIST_LARGE_1 = False
 RUN_LIST_LARGE_2 = False
 RUN_LIST_LARGE_3 = False
@@ -282,7 +282,7 @@ def solve(G, T, filename=""):
                             pass
 
 
-    # Kruskal-like method (doesn't work yet)
+    # Kruskal-like method
     if len(G) > 10 and KRUSKAL_STARTER:
         # Strategy: add the smallest edge that adds 1 node to the tree
         edges = sorted(G.edges(data=True), key=lambda t: t[2].get('weight', 1))
@@ -314,7 +314,7 @@ def solve(G, T, filename=""):
         edges = sorted(best_T.edges(data=True), key=lambda t: t[2].get('weight', 1), reverse=True)
         iterations = len(edges)
         for i in range(iterations):
-            largest_edge = edges[0]
+            largest_edge = edges[randint(0, min(10, len(edges)-1))]
             largest_edge = (largest_edge[0], largest_edge[1])
             T_edges = list(best_T.edges)
             T_edges.remove(largest_edge)
@@ -497,6 +497,8 @@ def run_solver():
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_small)
         if RUN_LIST_MEDIUM:
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_medium)
+        if RUN_LIST_LARGE:
+            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large)
         if RUN_LIST_LARGE_1:
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_1)
         if RUN_LIST_LARGE_2:
