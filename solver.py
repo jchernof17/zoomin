@@ -587,14 +587,15 @@ def run_solver():
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_medium)
         if RUN_LIST_LARGE:
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large)
-        if RUN_LIST_LARGE_1:
-            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_1)
-        if RUN_LIST_LARGE_2:
-            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_2)
-        if RUN_LIST_LARGE_3:
-            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_3)
-        if RUN_LIST_LARGE_4:
-            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_4)
+        else:
+            if RUN_LIST_LARGE_1:
+                Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_1)
+            if RUN_LIST_LARGE_2:
+                Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_2)
+            if RUN_LIST_LARGE_3:
+                Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_3)
+            if RUN_LIST_LARGE_4:
+                Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_4)
 
     elif not file and not ONLY_RUN_IMPROVABLE:
         for i in range(len(sizes)):
