@@ -76,35 +76,39 @@ bad_large_1 = bad_large[:size]
 bad_large_2 = bad_large[size:2 * size]
 bad_large_3 = bad_large[2 * size:3 * size]
 bad_large_4 = bad_large[3 * size:]
-file = ""
+file = "large-328"
 START = 1  # Set this to some number between 1 and 303
-RUN_LIST_SMALL = True
-RUN_LIST_MEDIUM = True
-RUN_LIST_LARGE = True
-RUN_LIST_LARGE_1 = True
-RUN_LIST_LARGE_2 = True
-RUN_LIST_LARGE_3 = True
-RUN_LIST_LARGE_4 = True
+RUN_LIST_SMALL = False
+RUN_LIST_MEDIUM = False
+RUN_LIST_LARGE = False
+RUN_LIST_LARGE_1 = False
+RUN_LIST_LARGE_2 = False
+RUN_LIST_LARGE_3 = False
+RUN_LIST_LARGE_4 = False
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
 BRUTE_FORCE = False
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 16384
-MAX_SECONDROUND_SUBLISTS = 1024
-BRUTE_EDGES = False
-EDGE_TINKERING = False
-KRUSKAL_STARTER = False
+MAXIMUM_SUBLISTS = 5000
+MAX_SECONDROUND_SUBLISTS = 10
+BRUTE_EDGES = True
+EDGE_TINKERING = True
+KRUSKAL_STARTER = True
 TRY_REMOVING_LARGEST_EDGE = True  # also known as tree cut
 TRY_SMALL_NUM_EDGES = True
 LARGE_SHORTEST_PATH = True
 REMOVE_DEGREE_TWO_NODES = True
+REMOVE_DEGREE_THREE_NODES = True
 DISPLAY_HUD = False
 
 # DEBUGGING
 TIME_EACH_OUTPUT = False
 SHOW_UPDATE_RESULT = True
+
+#[pair[0] for pair in nx.degree(G) if pair[0] not in best_T.nodes]
+
 
 
 def subedgelists_from_graph(G, T=None):
@@ -252,7 +256,50 @@ def solve(G, T, filename=""):
                                 if SHOW_UPDATE_RESULT:
                                     # print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (remove one leaf strat)")
                                     pass
-                    
+        # remove degree 2 node method
+    
+    # remove degree 3 node method
+    if len(G) and len(best_T) > 3 and REMOVE_DEGREE_THREE_NODES:
+        nodes_of_degree_three = [node[0] for node in best_T.degree if node[1] == 3]
+        best_T_nodes = list(best_T.nodes)
+        graph_edges = sorted(G.edges(data=True),key=lambda t: t[2].get('weight', 1)) 
+        for node in nodes_of_degree_three:
+            neighbors = list(best_T.edges(node))
+            adjacents = list(best_T.adj[node])
+            # print(len(adjacents))
+            if len(adjacents) == 3:
+                # print(neighbors)
+                TEST_G = best_T.copy()
+                TEST_G.remove_edges_from(neighbors)
+                final_edges = list(TEST_G.edges)
+                component_1 = list(node_connected_component(TEST_G, adjacents[0]))
+                component_2 = list(node_connected_component(TEST_G, adjacents[1]))
+                component_3 = list(node_connected_component(TEST_G, adjacents[2]))
+                CUT_T = G.edge_subgraph(final_edges).copy()
+                if nx.is_dominating_set(G, CUT_T.nodes):
+                    #print("found a dominating set")
+                    # print("we have a dominating set")
+                    # find an edge connecting component 1 to component 2
+                    # print(component_1, component_2)
+                    cross_1_2 = [edge[:2] for edge in graph_edges if crosses_components(component_1, component_2, edge)]
+                    cross_2_3 = [edge[:2] for edge in graph_edges if crosses_components(component_2, component_3, edge) or crosses_components(component_1, component_3, edge)]
+                    # connect 1 and 2
+                    for edge_1 in cross_1_2:
+                        for edge_2 in cross_2_3:
+                            #print("found a valid component connector")
+                            new_tree_edges = final_edges.copy()
+                            new_tree_edges.append(edge_1)
+                            new_tree_edges.append(edge_2)
+                            TEST_T = G.edge_subgraph(new_tree_edges).copy()
+                            if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                                # print("finally found a valid set")
+                                new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                                if new_score < best_score:
+                                    best_T = TEST_T
+                                    best_score = new_score
+                                    if SHOW_UPDATE_RESULT:
+                                        print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (3 degree)")
+                                        pass
     # Remove Edge Method
     if len(G) and len(best_T) > 2 and TRY_SMALL_NUM_EDGES:
         nodes_of_degree_one = [node[0] for node in best_T.degree if node[1] == 1]
@@ -331,8 +378,8 @@ def solve(G, T, filename=""):
         # Replace the largest edges in the tree with a shorter path between the nodes
         edges = sorted(best_T.edges(data=True), key=lambda t: t[2].get('weight', 1), reverse=True)
         iterations = len(edges)
-        for i in range(iterations):
-            largest_edge = edges[randint(0, len(edges)-1)]
+        for largest_edge in edges:
+            # largest_edge = edges[randint(0, len(edges)-1)]
             largest_edge = (largest_edge[0], largest_edge[1])
             T_edges = list(best_T.edges)
             T_edges.remove(largest_edge)
@@ -546,6 +593,13 @@ def run_solver():
     end_time = time.perf_counter()
     print(f"Process complete. Total time {end_time - start_time:0.4f} seconds")
 
+def crosses_components(c_1, c_2, edge):
+    u, v = edge[0], edge[1]
+    if u in c_1:
+        return v in c_2
+    if u in c_2:
+        return v in c_1
+    return False
 
 if __name__ == '__main__':
     if DISPLAY_HUD:
@@ -555,6 +609,9 @@ if __name__ == '__main__':
 # Here's an example of how to run your solver.
 
 # Usage: python3 solver.py test.in
+
+
+
 
 # if __name__ == '__main__':
 #     assert len(sys.argv) == 2
