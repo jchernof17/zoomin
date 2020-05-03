@@ -15,9 +15,9 @@ from random import sample, randint, choices
 # CONTROL SWITCHES ###
 
 # INPUT FILES
-improvable = ["small-1", "small-7", "small-15", "small-16", "small-17", 
-"small-18", "small-27", "small-43", "small-45",
-"small-66", "small-71", "small-72", "small-78", 
+improvable = ["small-15", "small-16", "small-17", 
+"small-18", "small-43", "small-45",
+"small-66", "small-72", "small-78", 
 "small-89", "small-99", "small-117", "small-121",
 "small-126", "small-129", "small-131", "small-133", "small-136", "small-144",
 "small-161", "small-166", "small-178", 
@@ -95,13 +95,13 @@ bad_large_3 = bad_large[2 * size:3 * size]
 bad_large_4 = bad_large[3 * size:]
 file = ""
 START = 1  # Set this to some number between 1 and 303
-RUN_LIST_SMALL = False
+RUN_LIST_SMALL = True
 RUN_LIST_MEDIUM = False
 RUN_LIST_LARGE = False
 RUN_LIST_LARGE_1 = False
 RUN_LIST_LARGE_2 = False
-RUN_LIST_LARGE_3 = True
-RUN_LIST_LARGE_4 = True
+RUN_LIST_LARGE_3 = False
+RUN_LIST_LARGE_4 = False
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
@@ -110,8 +110,8 @@ MAX_SPANNING_TREE = False
 DOMINATING_SET = False
 MAXIMUM_SUBLISTS = 16384
 MAX_SECONDROUND_SUBLISTS = 1024
-BRUTE_EDGES = True
-EDGE_TINKERING = True
+BRUTE_EDGES = False
+EDGE_TINKERING = False
 KRUSKAL_STARTER = True
 TRY_REMOVING_LARGEST_EDGE = True  # also known as tree cut
 TRY_SMALL_NUM_EDGES = True
