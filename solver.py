@@ -662,10 +662,10 @@ def run_solver():
         for i in range(len(sizes)):
             size = sizes[i]
             GRAPH_RANGE = range(START, num_graphs[i])
-            #Parallel(n_jobs=num_cores)(delayed(solver)(size, j) for j in GRAPH_RANGE)
-            for j in GRAPH_RANGE:
-                if j != 58:
-                    solver(size, j)
+            Parallel(n_jobs=num_cores)(delayed(solver)(size, j) for j in GRAPH_RANGE)
+            #for j in GRAPH_RANGE:
+            #    if j != 58:
+            #        solver(size, j)
     elif file:  # file-specific running
         filepath = file
         G = read_input_file("inputs/"+filepath+".in")
