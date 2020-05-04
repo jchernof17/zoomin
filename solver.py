@@ -16,8 +16,8 @@ from random import sample, randint, choices
 # CONTROL SWITCHES ###
 
 # INPUT FILES
-improvable = ['small-15', 'small-16', 'small-17', 'small-18', 'small-43', 'small-45', 'small-66', 'small-72', 'small-89', 'small-99', 
-'small-117', 'small-121', 'small-126', 'small-129', 'small-131', 'small-133', 'small-136', 'small-144', 'small-161', 'small-166', 
+improvable = ['small-15', 'small-16', 'small-17', 'small-18', 'small-43', 'small-45', 'small-72', 'small-89', 'small-99', 
+'small-117', 'small-121', 'small-126', 'small-131', 'small-133', 'small-136', 'small-144', 'small-161', 'small-166', 
 'small-178', 'small-205', 'small-206', 'small-213', 'small-217', 'small-227', 'small-228', 'small-231', 'small-234', 'small-237', 
 'small-239', 'small-242', 'small-253', 'small-258', 'small-260', 'small-278', 'small-287', 'small-291', 'small-301', "medium-1", 
 "medium-4", "medium-6", "medium-11", "medium-15", "medium-16", "medium-17", "medium-18", "medium-21", "medium-23", "medium-26", 
@@ -70,18 +70,17 @@ improvable = ['small-15', 'small-16', 'small-17', 'small-18', 'small-43', 'small
 bad_small = [file for file in improvable if "small" in file]
 bad_medium = [file for file in improvable if "medium" in file]
 bad_large = [file for file in improvable if "large" in file]
-# bad_small = ["small-258"]
 # Split up the large file list into four subsections for easier parallelizing
 size = len(bad_large) // 4
 bad_large_1 = bad_large[:size]
 bad_large_2 = bad_large[size:2 * size]
 bad_large_3 = bad_large[2 * size:3 * size]
 bad_large_4 = bad_large[3 * size:]
-file = "small-258"
+file = ""
 START = 1  # Set this to some number between 1 and 303
 RUN_LIST_SMALL = True
-RUN_LIST_MEDIUM = True
-RUN_LIST_LARGE = True
+RUN_LIST_MEDIUM = False
+RUN_LIST_LARGE = False
 RUN_LIST_LARGE_1 = False
 RUN_LIST_LARGE_2 = False
 RUN_LIST_LARGE_3 = False
@@ -92,8 +91,8 @@ ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 BRUTE_FORCE = True
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 8192
-MAX_SECONDROUND_SUBLISTS = 1024
+MAXIMUM_SUBLISTS = 512
+MAX_SECONDROUND_SUBLISTS = 128
 BRUTE_EDGES = True
 EDGE_TINKERING = True
 KRUSKAL_STARTER = True
@@ -103,7 +102,7 @@ LARGE_SHORTEST_PATH = True
 REMOVE_DEGREE_TWO_NODES = True
 REMOVE_DEGREE_THREE_NODES = True
 ADD_NODES = True
-PSEUDO_SOLVER = True
+PSEUDO_SOLVER = False
 DISPLAY_HUD = False
 
 # DEBUGGING
@@ -565,7 +564,7 @@ def psuedo_solver(G, T, filename=""):
             # print(sublist)
             if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
                 # now we try iterating
-                TEST_T = solve(G, T, filename, TEST_T)
+                TEST_T = solve(G, best_T, filename, TEST_T)
                 if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
                     new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
                     if new_score < best_score:
@@ -590,7 +589,7 @@ def psuedo_solver(G, T, filename=""):
             # try the steiner tree method
             TEST_T = steiner_tree(TEST_G, lst)
             if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
-                TEST_T = solve(G, T, filename, TEST_T)
+                TEST_T = solve(G, best_T, filename, TEST_T)
                 if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
                     new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
                     if new_score < best_score:
@@ -682,9 +681,6 @@ def crosses_components(c_1, c_2, edge):
     if u in c_2:
         return v in c_1
     return False
-
-
-
 
 
 if __name__ == '__main__':
