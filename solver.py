@@ -3,6 +3,7 @@ from networkx.algorithms.approximation import steiner_tree, min_edge_dominating_
 from networkx.algorithms.shortest_paths.weighted import dijkstra_path
 from networkx.algorithms.mis import maximal_independent_set
 from networkx.algorithms.components import node_connected_component
+from networkx.algorithms.cycles import find_cycle
 from parse import read_input_file, write_output_file, read_output_file
 from utils import average_pairwise_distance_fast, edge_lower_bound, edge_upper_bound
 from joblib import Parallel, delayed
@@ -76,11 +77,11 @@ bad_large_1 = bad_large[:size]
 bad_large_2 = bad_large[size:2 * size]
 bad_large_3 = bad_large[2 * size:3 * size]
 bad_large_4 = bad_large[3 * size:]
-file = "large-328"
+file = ""
 START = 1  # Set this to some number between 1 and 303
-RUN_LIST_SMALL = False
-RUN_LIST_MEDIUM = False
-RUN_LIST_LARGE = False
+RUN_LIST_SMALL = True
+RUN_LIST_MEDIUM = True
+RUN_LIST_LARGE = True
 RUN_LIST_LARGE_1 = False
 RUN_LIST_LARGE_2 = False
 RUN_LIST_LARGE_3 = False
@@ -88,19 +89,21 @@ RUN_LIST_LARGE_4 = False
 ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 
 # STRATEGIES
-BRUTE_FORCE = False
+BRUTE_FORCE = True
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 5000
+MAXIMUM_SUBLISTS = 100
 MAX_SECONDROUND_SUBLISTS = 10
 BRUTE_EDGES = True
-EDGE_TINKERING = True
+EDGE_TINKERING = False
 KRUSKAL_STARTER = True
 TRY_REMOVING_LARGEST_EDGE = True  # also known as tree cut
 TRY_SMALL_NUM_EDGES = True
 LARGE_SHORTEST_PATH = True
 REMOVE_DEGREE_TWO_NODES = True
 REMOVE_DEGREE_THREE_NODES = True
+ADD_NODES = True
+PSEUDO_SOLVER = True
 DISPLAY_HUD = False
 
 # DEBUGGING
@@ -204,6 +207,8 @@ def display_stats(G, T, filename=""):
     # print("("+filename+") \t (density) = (" + str(number_of_nodes)+","+str(number_of_edges)+") \t (vr, er) = (" + node_ratio + "," + edge_ratio + ")")
     return density, node_ratio, edge_ratio, number_of_nodes
 
+
+
 def solve(G, T, filename=""):
     """
     Args:
@@ -221,6 +226,27 @@ def solve(G, T, filename=""):
         return T
     best_T, best_score = T, existing_best_score
     edges_of_G = list(G.edges)
+
+    # add nodes
+    if len(G) and ADD_NODES:
+        nodes = [node for node in G.nodes if node not in best_T.nodes]
+        for node in nodes:
+            edges = list(G.edges(node))
+            new_edges = list(best_T.edges)
+            new_edges.extend(edges)
+            TEST_G = G.edge_subgraph(new_edges).copy()
+            while not nx.is_tree(TEST_G):
+                cycle = nx.find_cycle(TEST_G, orientation='ignore')
+                edge_to_remove = cycle[randint(0, len(cycle)-1)]
+                TEST_G.remove_edge(edge_to_remove[0], edge_to_remove[1])
+            if len(TEST_G) and nx.is_tree(TEST_G) and nx.is_dominating_set(G, TEST_G.nodes):
+                new_score = 0 if not TEST_G.edges else average_pairwise_distance_fast(TEST_G)
+                if new_score < best_score:
+                    best_T = TEST_G
+                    best_score = new_score
+                    if SHOW_UPDATE_RESULT:
+                        print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (add nodes)")
+                        pass
 
     # remove degree 2 node method
     if len(G) and len(best_T) > 2 and REMOVE_DEGREE_TWO_NODES:
@@ -346,7 +372,6 @@ def solve(G, T, filename=""):
                             #print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (tree cut)")
                             pass
 
-
     # Kruskal-like method
     if len(G) > 10 and KRUSKAL_STARTER:
         # Strategy: add the smallest edge that adds 1 node to the tree
@@ -399,8 +424,8 @@ def solve(G, T, filename=""):
 
     # Edge Tinkering method
     if len(G) and EDGE_TINKERING:
-        candidate_nodes = [node for node in G.nodes if node not in T.nodes]
-        candidate_edges = sorted([e for e in G.edges if e not in list(T.edges) and ((e[0] in candidate_nodes) ^ (e[1] in candidate_nodes))])
+        candidate_nodes = [node for node in G.nodes if node not in best_T.nodes]
+        candidate_edges = sorted([e for e in G.edges if e not in list(best_T.edges) and ((e[0] in candidate_nodes) ^ (e[1] in candidate_nodes))])
         # print(list(T.edges))
         max_iters = MAXIMUM_SUBLISTS
         i = 0
@@ -413,7 +438,7 @@ def solve(G, T, filename=""):
             add_edge_sample = sample(candidate_edges, k=randint(min([1, len(candidate_edges)]), min([12, len(candidate_edges)])))
             add_edge_sample = []
             # print(edge_sample)
-            edge_list = list(T.edges)
+            edge_list = list(best_T.edges)
             for edge in add_edge_sample:
                 edge_list.append(edge)
             # print(edge_list)
@@ -522,6 +547,65 @@ def stats_summarizer():
     for result in results:
         print(str(result[0]) + "\t" + str(result[1]))
 
+
+def psuedo_solver(G, T, filename=""):
+    method_start_time = time.perf_counter()
+    # load existing graph
+    existing_best_score = 0
+    if T and T.edges:
+        existing_best_score = average_pairwise_distance_fast(T)
+    else:  # if we already calculated a score of 0, skip this analysis
+        return T
+    best_T, best_score = T, existing_best_score
+    # run the edge brute force, and iterate off the resultant tree
+    # Edge-based brute force
+    print("running ps")
+    if len(G) and BRUTE_EDGES:
+        subedgelists = subedgelists_from_graph(G, best_T)
+        for sublist in subedgelists:
+            TEST_T = G.edge_subgraph(sublist).copy()
+            # print(sublist)
+            if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                # now we try iterating
+                TEST_T = solve(G, T, filename)
+                if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                    new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                    if new_score < best_score:
+                        if SHOW_UPDATE_RESULT:
+                            print("(" + filename + ") _EDGE_ improvement of " + str(round(-100 * (new_score - existing_best_score) / existing_best_score, 2)) + "%" + " detected (" + str(len(list(best_T.edges))) + " --> " + str(len(list(TEST_T.edges))) + ")")
+                        best_T = TEST_T
+                        best_score = new_score
+    # run the node brute force, and iterate off the resultant tree
+    # Random guessing/brute force
+    if len(G) and BRUTE_FORCE:
+        # create sublists
+        sublists = sublists_from_graph(G, T=best_T)
+        # Print for debug only
+        # print("checking on " + str(len(sublists)) + " sublists")
+        i = 0
+        while i < len(sublists):
+            lst = sublists[i]
+            # remove sublist nodes from original graph
+            TEST_G = G.copy()
+            # nodes_to_remove = [node for node in G.nodes if node not in lst]
+            # TEST_G.remove_nodes_from(nodes_to_remove)
+            # try the steiner tree method
+            TEST_T = steiner_tree(TEST_G, lst)
+            if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                TEST_T = solve(G, T, filename)
+                if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                    new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                    if new_score < best_score:
+                        if SHOW_UPDATE_RESULT:
+                            print("(" + filename + ") _NODE_ improvement of " + str(round(-100 * (new_score - existing_best_score) / existing_best_score, 2)) + "%" + " detected (" + str(len(best_T)) + " --> " + str(len(TEST_T)) + ")")
+                        best_T = TEST_T
+                        best_score = new_score
+                        # If we get a record, we continue trying to improve
+                        sublists.extend(sublists_from_graph(G, max_iters=MAX_SECONDROUND_SUBLISTS, T=best_T))
+            i += 1
+    return best_T
+
+
 def run_solver():
     """
     Runs the solve() function on all graphs in the inputs folder and saves outputs
@@ -555,7 +639,7 @@ def run_solver():
         EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
         # outputs.append((solve(G, EXISTING_T), filepath))
         # um = solve(G, EXISTING_T, filename=filepath)
-        write_output_file(solve(G, EXISTING_T, filename=filepath), "outputs/"+filepath+".out")
+        write_output_file(psuedo_solver(G, EXISTING_T, filename=filepath), "outputs/"+filepath+".out")
 
     if not file and ONLY_RUN_IMPROVABLE:
         if RUN_LIST_SMALL:
@@ -564,14 +648,15 @@ def run_solver():
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_medium)
         if RUN_LIST_LARGE:
             Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large)
-        if RUN_LIST_LARGE_1:
-            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_1)
-        if RUN_LIST_LARGE_2:
-            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_2)
-        if RUN_LIST_LARGE_3:
-            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_3)
-        if RUN_LIST_LARGE_4:
-            Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_4)
+        else:
+            if RUN_LIST_LARGE_1:
+                Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_1)
+            if RUN_LIST_LARGE_2:
+                Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_2)
+            if RUN_LIST_LARGE_3:
+                Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_3)
+            if RUN_LIST_LARGE_4:
+                Parallel(n_jobs=num_cores)(delayed(solver)(filename=file) for file in bad_large_4)
 
     elif not file and not ONLY_RUN_IMPROVABLE:
         for i in range(len(sizes)):
@@ -600,6 +685,10 @@ def crosses_components(c_1, c_2, edge):
     if u in c_2:
         return v in c_1
     return False
+
+
+
+
 
 if __name__ == '__main__':
     if DISPLAY_HUD:
