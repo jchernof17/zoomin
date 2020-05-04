@@ -639,7 +639,7 @@ def run_solver():
         if PSEUDO_SOLVER:
             write_output_file(psuedo_solver(G, EXISTING_T, filename=filepath), "outputs/"+filepath+".out")
         else:
-            write_output_file(solver(G, EXISTING_T, filepath, EXISTING_T), "outputs/"+filepath+".out")
+            write_output_file(solve(G, EXISTING_T, filepath, EXISTING_T), "outputs/"+filepath+".out")
 
     if not file and ONLY_RUN_IMPROVABLE:
         if RUN_LIST_SMALL:
