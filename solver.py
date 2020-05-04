@@ -12,7 +12,7 @@ import multiprocessing
 #import inferior_outputs
 import time
 from random import sample, randint, choices
-
+# git restore outputs/*
 # CONTROL SWITCHES ###
 
 # INPUT FILES
@@ -70,7 +70,7 @@ improvable = ['small-15', 'small-16', 'small-17', 'small-18', 'small-43', 'small
 bad_small = [file for file in improvable if "small" in file]
 bad_medium = [file for file in improvable if "medium" in file]
 bad_large = [file for file in improvable if "large" in file]
-
+# bad_small = ["small-258"]
 # Split up the large file list into four subsections for easier parallelizing
 size = len(bad_large) // 4
 bad_large_1 = bad_large[:size]
@@ -92,7 +92,7 @@ ONLY_RUN_IMPROVABLE = True  # don't you dare set this to false...
 BRUTE_FORCE = True
 MAX_SPANNING_TREE = False
 DOMINATING_SET = False
-MAXIMUM_SUBLISTS = 16384
+MAXIMUM_SUBLISTS = 8192
 MAX_SECONDROUND_SUBLISTS = 1024
 BRUTE_EDGES = True
 EDGE_TINKERING = True
@@ -103,6 +103,7 @@ LARGE_SHORTEST_PATH = True
 REMOVE_DEGREE_TWO_NODES = True
 REMOVE_DEGREE_THREE_NODES = True
 ADD_NODES = True
+PSEUDO_SOLVER = True
 DISPLAY_HUD = False
 
 # DEBUGGING
@@ -206,7 +207,9 @@ def display_stats(G, T, filename=""):
     # print("("+filename+") \t (density) = (" + str(number_of_nodes)+","+str(number_of_edges)+") \t (vr, er) = (" + node_ratio + "," + edge_ratio + ")")
     return density, node_ratio, edge_ratio, number_of_nodes
 
-def solve(G, T, filename=""):
+
+
+def solve(G, T, filename="", new_trial_T=None):
     """
     Args:
         G: networkx.Graph
@@ -221,7 +224,7 @@ def solve(G, T, filename=""):
         existing_best_score = average_pairwise_distance_fast(T)
     else:  # if we already calculated a score of 0, skip this analysis
         return T
-    best_T, best_score = T, existing_best_score
+    best_T, best_score = new_trial_T, existing_best_score
     edges_of_G = list(G.edges)
 
     # add nodes
@@ -369,7 +372,6 @@ def solve(G, T, filename=""):
                             #print("(" + filename + ") ___ improvement of " + str(round(-100 * (best_score - existing_best_score)/existing_best_score, 2)) + "%" + " detected (tree cut)")
                             pass
 
-
     # Kruskal-like method
     if len(G) > 10 and KRUSKAL_STARTER:
         # Strategy: add the smallest edge that adds 1 node to the tree
@@ -422,8 +424,8 @@ def solve(G, T, filename=""):
 
     # Edge Tinkering method
     if len(G) and EDGE_TINKERING:
-        candidate_nodes = [node for node in G.nodes if node not in T.nodes]
-        candidate_edges = sorted([e for e in G.edges if e not in list(T.edges) and ((e[0] in candidate_nodes) ^ (e[1] in candidate_nodes))])
+        candidate_nodes = [node for node in G.nodes if node not in best_T.nodes]
+        candidate_edges = sorted([e for e in G.edges if e not in list(best_T.edges) and ((e[0] in candidate_nodes) ^ (e[1] in candidate_nodes))])
         # print(list(T.edges))
         max_iters = MAXIMUM_SUBLISTS
         i = 0
@@ -436,7 +438,7 @@ def solve(G, T, filename=""):
             add_edge_sample = sample(candidate_edges, k=randint(min([1, len(candidate_edges)]), min([12, len(candidate_edges)])))
             add_edge_sample = []
             # print(edge_sample)
-            edge_list = list(T.edges)
+            edge_list = list(best_T.edges)
             for edge in add_edge_sample:
                 edge_list.append(edge)
             # print(edge_list)
@@ -461,7 +463,7 @@ def solve(G, T, filename=""):
             i += 1
 
     # Edge-based brute force
-    if len(G) and BRUTE_EDGES:
+    if len(G) and BRUTE_EDGES and not PSEUDO_SOLVER:
         subedgelists = subedgelists_from_graph(G, best_T)
         for sublist in subedgelists:
             TEST_T = G.edge_subgraph(sublist).copy()
@@ -474,7 +476,7 @@ def solve(G, T, filename=""):
                     best_T = TEST_T
                     best_score = new_score
     # Random guessing/brute force
-    if len(G) and BRUTE_FORCE:
+    if len(G) and BRUTE_FORCE and not PSEUDO_SOLVER:
         # create sublists
         sublists = sublists_from_graph(G, T=best_T)
         # Print for debug only
@@ -521,17 +523,15 @@ def solve(G, T, filename=""):
 
     if not nx.is_dominating_set(G, best_T) or not nx.is_tree(best_T):  # uh oh
         best_T = nx.minimum_spanning_tree(G)
-    if best_score < existing_best_score and SHOW_UPDATE_RESULT:
+    if best_score < existing_best_score:
         print("|yes ___ (" + filename + ") " + str(round(-100 * (best_score - existing_best_score) / existing_best_score, 2)) + "% ----- new score " + str(round(best_score, 4)))
-
-    elif SHOW_UPDATE_RESULT:
-        # print("no, " + str(round(existing_best_score,2)))
-        pass
+        return best_T
+    else:
+        return T
     method_end_time = time.perf_counter()
     time_seconds = method_end_time - method_start_time
     if TIME_EACH_OUTPUT:
         print("time: " + str(round(time_seconds, 2)) + "s")
-    return best_T
 
 def stats_summarizer():
     results = []
@@ -544,6 +544,65 @@ def stats_summarizer():
     results = sorted(results, key=lambda r: r[0])  # sort by densities
     for result in results:
         print(str(result[0]) + "\t" + str(result[1]))
+
+
+def psuedo_solver(G, T, filename=""):
+    method_start_time = time.perf_counter()
+    # load existing graph
+    existing_best_score = 0
+    if T and T.edges:
+        existing_best_score = average_pairwise_distance_fast(T)
+    else:  # if we already calculated a score of 0, skip this analysis
+        return T
+    best_T, best_score = T, existing_best_score
+    # run the edge brute force, and iterate off the resultant tree
+    # Edge-based brute force
+    print("running ps")
+    if len(G) and BRUTE_EDGES:
+        subedgelists = subedgelists_from_graph(G, best_T)
+        for sublist in subedgelists:
+            TEST_T = G.edge_subgraph(sublist).copy()
+            # print(sublist)
+            if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                # now we try iterating
+                TEST_T = solve(G, T, filename, TEST_T)
+                if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                    new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                    if new_score < best_score:
+                        if SHOW_UPDATE_RESULT:
+                            print("(" + filename + ") _EDGE_ improvement of " + str(round(-100 * (new_score - existing_best_score) / existing_best_score, 2)) + "%" + " detected (" + str(len(list(best_T.edges))) + " --> " + str(len(list(TEST_T.edges))) + ")")
+                        best_T = TEST_T
+                        best_score = new_score
+    # run the node brute force, and iterate off the resultant tree
+    # Random guessing/brute force
+    if len(G) and BRUTE_FORCE:
+        # create sublists
+        sublists = sublists_from_graph(G, T=best_T)
+        # Print for debug only
+        # print("checking on " + str(len(sublists)) + " sublists")
+        i = 0
+        while i < len(sublists):
+            lst = sublists[i]
+            # remove sublist nodes from original graph
+            TEST_G = G.copy()
+            # nodes_to_remove = [node for node in G.nodes if node not in lst]
+            # TEST_G.remove_nodes_from(nodes_to_remove)
+            # try the steiner tree method
+            TEST_T = steiner_tree(TEST_G, lst)
+            if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                TEST_T = solve(G, T, filename, TEST_T)
+                if len(TEST_T) and nx.is_tree(TEST_T) and nx.is_dominating_set(G, TEST_T.nodes):
+                    new_score = 0 if not TEST_T.edges else average_pairwise_distance_fast(TEST_T)
+                    if new_score < best_score:
+                        if SHOW_UPDATE_RESULT:
+                            print("(" + filename + ") _NODE_ improvement of " + str(round(-100 * (new_score - existing_best_score) / existing_best_score, 2)) + "%" + " detected (" + str(len(best_T)) + " --> " + str(len(TEST_T)) + ")")
+                        best_T = TEST_T
+                        best_score = new_score
+                        # If we get a record, we continue trying to improve
+                        sublists.extend(sublists_from_graph(G, max_iters=MAX_SECONDROUND_SUBLISTS, T=best_T))
+            i += 1
+    return best_T
+
 
 def run_solver():
     """
@@ -578,7 +637,10 @@ def run_solver():
         EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
         # outputs.append((solve(G, EXISTING_T), filepath))
         # um = solve(G, EXISTING_T, filename=filepath)
-        write_output_file(solve(G, EXISTING_T, filename=filepath), "outputs/"+filepath+".out")
+        if PSEUDO_SOLVER:
+            write_output_file(psuedo_solver(G, EXISTING_T, filename=filepath), "outputs/"+filepath+".out")
+        else:
+            write_output_file(solver(G, EXISTING_T, filepath, EXISTING_T), "outputs/"+filepath+".out")
 
     if not file and ONLY_RUN_IMPROVABLE:
         if RUN_LIST_SMALL:
@@ -606,11 +668,7 @@ def run_solver():
             #    if j != 58:
             #        solver(size, j)
     elif file:  # file-specific running
-        filepath = file
-        G = read_input_file("inputs/"+filepath+".in")
-        EXISTING_T = read_output_file("outputs/"+filepath+".out", G)
-        T = solve(G, EXISTING_T)
-        write_output_file(T, "outputs/"+filepath+".out")
+        T = solver(filename=file)
     for output in outputs:
         # write_output_file(output[0], "outputs/"+output[1]+".out")
         pass
@@ -624,6 +682,10 @@ def crosses_components(c_1, c_2, edge):
     if u in c_2:
         return v in c_1
     return False
+
+
+
+
 
 if __name__ == '__main__':
     if DISPLAY_HUD:

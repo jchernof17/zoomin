@@ -1,4 +1,17 @@
+
+
+# Usage
+Install packages:
+```python
+pip install joblib
+pip install networkx
+```
 # Our notes
+## `solver.py`
+In `solver.py`, there are many strategies (feature flags) that can be turned on or off. These are typically represented by all-caps booleans at the top of the file. In addition, there are boolean flags that enable or disable running of the `small` files, `medium` files, and `large` files.
+
+In general, just run `python3 solver.py` to generate outputs for our program. Turn on and off features with the feature flag booleans at the top of the file.
+
 
 ## `generator.py`
 In `generator.py` I put some functions that can generate and save random graphs. This file can be run normally, or you can copy/paste the code and put it into a `.ipynb` and use the matplotlib package to actually visualize the graphs. An example of that is in the `generate_tree` function.
